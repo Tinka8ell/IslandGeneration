@@ -7,6 +7,7 @@ public class TerrainGenerator : MonoBehaviour {
 	const float viewerMoveThresholdForChunkUpdate = 25f;
 	const float sqrViewerMoveThresholdForChunkUpdate = viewerMoveThresholdForChunkUpdate * viewerMoveThresholdForChunkUpdate;
 
+	FalloffGenerator falloffGenerator;
 
 	public int colliderLODIndex;
 	public LODInfo[] detailLevels;
@@ -14,6 +15,7 @@ public class TerrainGenerator : MonoBehaviour {
 	public MeshSettings meshSettings;
 	public HeightMapSettings heightMapSettings;
 	public TextureData textureSettings;
+	public FalloffSettings falloffSettings;
 
 	public Transform viewer;
 	public Material mapMaterial;
@@ -27,6 +29,19 @@ public class TerrainGenerator : MonoBehaviour {
 	Dictionary<Vector2, TerrainChunk> terrainChunkDictionary = new Dictionary<Vector2, TerrainChunk>();
 	List<TerrainChunk> visibleTerrainChunks = new List<TerrainChunk>();
 
+	private void Awake()
+	{
+		MapPreview mapPreview = GetComponentInParent<MapPreview>();
+		if (mapPreview)
+		{
+			meshSettings = mapPreview.meshSettings;
+			heightMapSettings = mapPreview.heightMapSettings;
+			textureSettings = mapPreview.textureSettings;
+			falloffSettings = mapPreview.falloffSettings;
+			falloffGenerator = mapPreview.falloffGenerator;
+		}
+	}
+
 	void Start() {
 
 		textureSettings.ApplyToMaterial (mapMaterial);
@@ -35,8 +50,17 @@ public class TerrainGenerator : MonoBehaviour {
 		float maxViewDst = detailLevels [detailLevels.Length - 1].visibleDstThreshold;
 		meshWorldSize = meshSettings.meshWorldSize;
 		chunksVisibleInViewDst = Mathf.RoundToInt(maxViewDst / meshWorldSize);
+		falloffGenerator.GenerateFalloffMaps(meshSettings.numVertsPerLine, falloffSettings);
 
-		UpdateVisibleChunks ();
+		// for debugging!
+		viewerPosition = new Vector2(viewer.position.x, viewer.position.z);
+		int currentChunkCoordX = Mathf.RoundToInt(viewerPosition.x / meshWorldSize);
+		int currentChunkCoordY = Mathf.RoundToInt(viewerPosition.y / meshWorldSize);
+		Vector2 coord = new Vector2(currentChunkCoordX, currentChunkCoordY);
+		Anews anews = Islands.LocalNews(coord, true);
+		if (anews != null) Debug.Log("Start pos: " + coord + " with anews: " + anews + " and index: " + anews.ToIndex());
+		else Debug.Log("Start pos: " + coord + " with no anews");
+		UpdateVisibleChunks();
 	}
 
 	void Update() {
@@ -71,7 +95,9 @@ public class TerrainGenerator : MonoBehaviour {
 					if (terrainChunkDictionary.ContainsKey (viewedChunkCoord)) {
 						terrainChunkDictionary [viewedChunkCoord].UpdateTerrainChunk ();
 					} else {
-						TerrainChunk newChunk = new TerrainChunk (viewedChunkCoord,heightMapSettings,meshSettings, detailLevels, colliderLODIndex, transform, viewer, mapMaterial);
+						TerrainChunk newChunk = new TerrainChunk (
+							viewedChunkCoord, heightMapSettings, meshSettings, detailLevels, 
+							colliderLODIndex, transform, viewer, mapMaterial);
 						terrainChunkDictionary.Add (viewedChunkCoord, newChunk);
 						newChunk.onVisibilityChanged += OnTerrainChunkVisibilityChanged;
 						newChunk.Load ();

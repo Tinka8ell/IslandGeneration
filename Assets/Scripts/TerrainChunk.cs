@@ -2,7 +2,7 @@
 
 public class TerrainChunk {
 	
-	const float colliderGenerationDistanceThreshold = 5;
+	const float colliderGenerationDistanceThreshold = 5; 
 	public event System.Action<TerrainChunk, bool> onVisibilityChanged;
 	public Vector2 coord;
 	 
@@ -28,7 +28,12 @@ public class TerrainChunk {
 	MeshSettings meshSettings;
 	Transform viewer;
 
-	public TerrainChunk(Vector2 coord, HeightMapSettings heightMapSettings, MeshSettings meshSettings, LODInfo[] detailLevels, int colliderLODIndex, Transform parent, Transform viewer, Material material) {
+	bool useFalloff;
+	FalloffGenerator falloffGenerator;
+
+	public TerrainChunk(Vector2 coord, HeightMapSettings heightMapSettings, 
+		MeshSettings meshSettings, LODInfo[] detailLevels, int colliderLODIndex, 
+		Transform parent, Transform viewer, Material material) {
 		this.coord = coord;
 		this.detailLevels = detailLevels;
 		this.colliderLODIndex = colliderLODIndex;
@@ -40,6 +45,8 @@ public class TerrainChunk {
 		Vector2 position = coord * meshSettings.meshWorldSize ;
 		bounds = new Bounds(position,Vector2.one * meshSettings.meshWorldSize );
 
+		useFalloff = heightMapSettings.useFalloff;
+		// TODO: this.falloffGenerator = falloffGenerator;
 
 		meshObject = new GameObject("Terrain Chunk");
 		meshRenderer = meshObject.AddComponent<MeshRenderer>();
@@ -65,7 +72,10 @@ public class TerrainChunk {
 	}
 
 	public void Load() {
-		ThreadedDataRequester.RequestData(() => HeightMapGenerator.GenerateHeightMap (meshSettings.numVertsPerLine, meshSettings.numVertsPerLine, heightMapSettings, sampleCentre), OnHeightMapReceived);
+		ThreadedDataRequester.RequestData(
+			() => HeightMapGenerator.GenerateHeightMap (
+				meshSettings.numVertsPerLine, heightMapSettings, sampleCentre, 
+				useFalloff, coord), OnHeightMapReceived);
 	}
 
 
@@ -126,7 +136,7 @@ public class TerrainChunk {
 	}
 
 	public void UpdateCollisionMesh() {
-		if (!hasSetCollider) {
+        if (!hasSetCollider) {
 			float sqrDstFromViewerToEdge = bounds.SqrDistance (viewerPosition);
 
 			if (sqrDstFromViewerToEdge < detailLevels [colliderLODIndex].sqrVisibleDstThreshold) {
