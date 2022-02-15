@@ -55,7 +55,7 @@ public class Islands
 			// anews = new Anews(Check(nw, debug), Check(n, debug), Check(ne, debug),
 			//	Check(e, debug), Check(w, debug),
 			//	Check(se, debug), Check(s, debug), Check(sw, debug));
-			anews = new Anews(isIsland, Check(n, debug), Check(e, debug), Check(w, debug),Check(s, debug));
+			anews = new Anews(isIsland, Check(n, debug), Check(e, debug), Check(s, debug), Check(w, debug));
 		}
 		if (debug)
         {

@@ -93,9 +93,11 @@ public struct FalloffGenerator
 				us = (i & 0b_0001_0000) != 0;
 				Anews anews = new Anews(us, n, e, s, w);
 				int index = anews.ToIndex();
-				bool debug = false; // (index == 183);
+				bool debug = (index == 13);
+				/* 
 				Debug.Log("Trying falloutmap number: " + anews.ToIndex()
 						+ " of " + FalloffGenerator.falloffMaps.Keys.Count + " for anews: " + anews);
+				*/
 				if (!falloffMaps.ContainsKey(index)) // haven't drawn it yet
 				{
 					if (debug) Debug.LogWarning("Adding falloutmap number: " + anews.ToIndex()
@@ -191,19 +193,64 @@ public struct FalloffGenerator
 		float c = abcd[2];
 		float d = abcd[3];
 
-		if (debug) Debug.Log("FillSlope: (" + x + ", " + y + "), size = " + size  
-			+ "), size = " + numberOfVertices + ", abce = (" + a + ", " + b + ", " + c + ", " + d + ")");
+		if (debug) Debug.Log("QuadSlope: (" + x + ", " + y + "), size = " + size  
+			+ "), size = " + numberOfVertices + ", abce = (" + a + ", " + b + ", " + c + ", " + d + ")"
+			+ ", direction = " + cd);
 
 		for (int i = 1; i < numberOfVertices; i++)
 		{
 			for (int j = 1; j < numberOfVertices; j++)
 			{
-				values[x + i, y + j] = Evaluate(
-					QuadLerp(a, b, c, d, i / (numberOfVertices - 1f), j / (numberOfVertices - 1f)),
-					falloffSettings.a, falloffSettings.b
+				bool debug2 = debug && (i == 10) && (j == 10);
+				if (debug2) Debug.Log("At: i = " + i + ", j = " + j + " => (" + (x + i) + ", " + (y + j) + ")");
+				values[x + i, y + j] = // ((i==10)||(j==10))? 1: 
+					Evaluate(
+						QuadLerp(
+							a, b, c, d, 
+							i / (numberOfVertices - 1f), j / (numberOfVertices - 1f), 
+							debug2),
+						falloffSettings.a, falloffSettings.b
 					);
 			}
 		}
+	}
+
+	static float Evaluate(float value, float a, float b)
+	{
+		float powA = Mathf.Pow(value, a);
+		return powA / (powA + Mathf.Pow(b - b * value, a));
+	}
+
+	public static float QuadLerp(float a, float b, float c, float d, float u, float v, bool debug = false)
+	{
+		// Given a (u,v) coordinate that defines a 2D local position inside a planar quadrilateral, find the
+		// absolute 3D (x,y,z) coordinate at that location.
+		//
+		//  0 <----u----> 1
+		//  a ----------- b    0
+		//  |             |   /|\
+		//  |             |    |
+		//  |             |    v
+		//  |  *(u,v)     |    |
+		//  |             |   \|/
+		//  d------------ c    1
+		//
+		// a, b, c, and d are the vertices of the quadrilateral. They are assumed to exist in the
+		// same plane in 3D space, but this function will allow for some non-planar error.
+		//
+		// Variables u and v are the two-dimensional local coordinates inside the quadrilateral.
+		// To find a point that is inside the quadrilateral, both u and v must be between 0 and 1 inclusive.  
+		// For example, if you send this function u=0, v=0, then it will return coordinate "a".  
+		// Similarly, coordinate u=1, v=1 will return vector "c". Any values between 0 and 1
+		// will return a coordinate that is bi-linearly interpolated between the four vertices.		
+
+		float abu = Mathf.Lerp(a, b, u);
+		float dcu = Mathf.Lerp(d, c, u);
+		float result = Mathf.Lerp(abu, dcu, v);
+		if (debug) Debug.Log("QuadLerp: a = " + a + ", b = " + b + ", u = " + u + " -> " + abu
+			+ " and d = " + d + ", c = " + c + ", u = " + u + " -> " + dcu
+			+ " with v = " + v + " -> " + result);
+		return result;
 	}
 
 	private enum SlopeDirection
@@ -333,11 +380,6 @@ public struct FalloffGenerator
 		return new FalloffMap(values);
 	}
 
-	static float Evaluate(float value, float a, float b) {
-		float powA = Mathf.Pow(value, a);
-		return powA / (powA + Mathf.Pow (b - b * value, a));
-	}
-
 	private static void FillSlope(
 		float[,] values, int[] tl, int[] br,
 		SlopeDirection w2e, SlopeDirection n2s,
@@ -462,34 +504,6 @@ public struct FalloffGenerator
 			}
 		}
 		if (debug) Debug.Log("After: (" + values[tl[0], tl[1]] + ", " + values[br[0] - 1, br[1] - 1] + ")");
-	}
-
-	public static float QuadLerp(float a, float b, float c, float d, float u, float v)
-	{
-		// Given a (u,v) coordinate that defines a 2D local position inside a planar quadrilateral, find the
-		// absolute 3D (x,y,z) coordinate at that location.
-		//
-		//  0 <----u----> 1
-		//  a ----------- b    0
-		//  |             |   /|\
-		//  |             |    |
-		//  |             |    v
-		//  |  *(u,v)     |    |
-		//  |             |   \|/
-		//  d------------ c    1
-		//
-		// a, b, c, and d are the vertices of the quadrilateral. They are assumed to exist in the
-		// same plane in 3D space, but this function will allow for some non-planar error.
-		//
-		// Variables u and v are the two-dimensional local coordinates inside the quadrilateral.
-		// To find a point that is inside the quadrilateral, both u and v must be between 0 and 1 inclusive.  
-		// For example, if you send this function u=0, v=0, then it will return coordinate "a".  
-		// Similarly, coordinate u=1, v=1 will return vector "c". Any values between 0 and 1
-		// will return a coordinate that is bi-linearly interpolated between the four vertices.		
-
-		float abu = Mathf.Lerp(a, b, u);
-		float dcu = Mathf.Lerp(d, c, u);
-		return Mathf.Lerp(abu, dcu, v);
 	}
 
 }

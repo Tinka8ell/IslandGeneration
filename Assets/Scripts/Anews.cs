@@ -49,44 +49,92 @@ public class Anews
             ">(" + index + ")";
     }
 
+    private string ShowEdges()
+    {
+        string value = "{" + 
+            edges[(int) Compass.NW] +
+            edges[(int)Compass.N] +
+            edges[(int)Compass.NE] + "/" +
+            edges[(int)Compass.W] +
+            edges[(int)CompassCentre] +
+            edges[(int)Compass.E] + "/" +
+            edges[(int)Compass.SW] +
+            edges[(int)Compass.S] +
+            edges[(int)Compass.SE] +
+            "}";
+        return value;
+    }
+    private string ShowCorners(float [] c)
+    {
+        string value = "[" +
+            c[0] + ", " +
+            c[1] + ", " +
+            c[2] + ", " +
+            c[3] + 
+            "]";
+        return value;
+    }
     public Anews(bool a, bool n, bool e, bool s, bool w)
     {
         index = BoolAsInt(a) + 2 * (BoolAsInt(n) + 2 * (BoolAsInt(e) + 2 * (BoolAsInt(s) + 2 * BoolAsInt(w))));
+        bool debug = index == 13;
 
         tostring = "<anesw:" 
-            + BoolAsStr(a) + BoolAsStr(n) + BoolAsStr(w) + BoolAsStr(e) + BoolAsStr(s) 
+            + BoolAsStr(a) + BoolAsStr(n) + BoolAsStr(e) + BoolAsStr(s) + BoolAsStr(w) 
             + ">(" + index + ")";
 
+        if (debug)
+        {
+            Debug.Log("Anews: " + tostring + ", " + ShowEdges());
+            Debug.Log("North: " + (n ? "T" : "F"));
+            Debug.Log("East: " + (e ? "T" : "F"));
+            Debug.Log("South: " + (s ? "T" : "F"));
+            Debug.Log("West: " + (w ? "T" : "F"));
+        }
         if (a)
         {
-            edges[CompassCentre] = 0f;
+            edges[CompassCentre] = 0f; // actuall will be by initialisation!
+            if (debug) Debug.Log("a: " + ShowEdges());
             if (!n) // nothing to the north, so slope that way
             {
                 edges[(int)Compass.NW] = 1f;
                 edges[(int)Compass.N] = 1f;
                 edges[(int)Compass.NE] = 1f;
+                if (debug) Debug.Log("n: " + ShowEdges());
             }
             if (!e) // nothing to the east, so slope that way
             {
                 edges[(int)Compass.NE] = 1f;
                 edges[(int)Compass.E] = 1f;
                 edges[(int)Compass.SE] = 1f;
+                if (debug) Debug.Log("e: " + ShowEdges());
             }
             if (!s) // nothing to the south, so slope that way
             {
                 edges[(int)Compass.SE] = 1f;
                 edges[(int)Compass.S] = 1f;
                 edges[(int)Compass.SW] = 1f;
+                if (debug) Debug.Log("s: " + ShowEdges());
             }
             if (!w) // nothing to the west, so slope that way
             {
                 edges[(int)Compass.SW] = 1f;
                 edges[(int)Compass.W] = 1f;
                 edges[(int)Compass.NW] = 1f;
+                if (debug) Debug.Log("w: " + ShowEdges());
             }
         }
         else // nothing here!
             for (int i = 0; i < CompassFullSize; i++) edges[i] = 1f;
+        if (debug)
+        {
+            Debug.Log("Result: " + tostring + " - " + ShowEdges());
+            Debug.Log(CornorDirection.NE + " = " + ShowCorners(getCorners(CornorDirection.NE)));
+            Debug.Log(CornorDirection.NW + " = " + ShowCorners(getCorners(CornorDirection.NW)));
+            Debug.Log(CornorDirection.SW + " = " + ShowCorners(getCorners(CornorDirection.SW)));
+            Debug.Log(CornorDirection.SE + " = " + ShowCorners(getCorners(CornorDirection.SE)));
+        }
+
     }
 
     public float [] getCorners(CornorDirection cornorDirection)
@@ -95,7 +143,7 @@ public class Anews
         switch (cornorDirection)
         {
             case CornorDirection.NW:
-                values = new float[] { edges[(int)Compass.NW], edges[(int)Compass.N], edges[CompassCentre], edges[(int)Compass.E] };
+                values = new float[] { edges[(int)Compass.NW], edges[(int)Compass.N], edges[CompassCentre], edges[(int)Compass.W] };
                 break;
             case CornorDirection.NE:
                 values = new float[] { edges[(int)Compass.N], edges[(int)Compass.NE], edges[(int)Compass.E], edges[CompassCentre] };
