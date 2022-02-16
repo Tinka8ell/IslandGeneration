@@ -29,30 +29,15 @@ public class Anews
 
     private Slope[] directions = new Slope[4];
 
-    private readonly int index;
-    private readonly string tostring;
+    private int index;
+    private string tostring;
 
     private float[] edges = new float[CompassFullSize];
-
-    public Anews(bool nw, bool n, bool ne, bool w, bool e, bool sw, bool s, bool se)
-    {
-        directions[(int)CornorDirection.NE] = CalculateSlope(n, ne, e);
-        directions[(int)CornorDirection.SE] = CalculateSlope(e, se, s);
-        directions[(int)CornorDirection.SW] = CalculateSlope(s, sw, w);
-        directions[(int)CornorDirection.NW] = CalculateSlope(w, nw, n);
-
-        index = (int)directions[0] + 4 * ((int)directions[1] + 4 * ((int)directions[2] + 4 * (int)directions[3]));
-
-        tostring = "<" + BoolAsStr(nw) + BoolAsStr(n) + BoolAsStr(ne) +
-            "/" + BoolAsStr(w) + "1" + BoolAsStr(e) +
-            "/" + BoolAsStr(sw) + BoolAsStr(s) + BoolAsStr(se) +
-            ">(" + index + ")";
-    }
 
     private string ShowEdges()
     {
         string value = "{" + 
-            edges[(int) Compass.NW] +
+            edges[(int)Compass.NW] +
             edges[(int)Compass.N] +
             edges[(int)Compass.NE] + "/" +
             edges[(int)Compass.W] +
@@ -64,6 +49,7 @@ public class Anews
             "}";
         return value;
     }
+
     private string ShowCorners(float [] c)
     {
         string value = "[" +
@@ -74,70 +60,70 @@ public class Anews
             "]";
         return value;
     }
-    public Anews(bool a, bool n, bool e, bool s, bool w)
+
+    public Anews(bool nw, bool n, bool ne, bool w, bool c, bool e, bool sw, bool s, bool se)
     {
-        index = BoolAsInt(a) + 2 * (BoolAsInt(n) + 2 * (BoolAsInt(e) + 2 * (BoolAsInt(s) + 2 * BoolAsInt(w))));
-        bool debug = index == 13;
-
-        tostring = "<anesw:" 
-            + BoolAsStr(a) + BoolAsStr(n) + BoolAsStr(e) + BoolAsStr(s) + BoolAsStr(w) 
-            + ">(" + index + ")";
-
-        if (debug)
-        {
-            Debug.Log("Anews: " + tostring + ", " + ShowEdges());
-            Debug.Log("North: " + (n ? "T" : "F"));
-            Debug.Log("East: " + (e ? "T" : "F"));
-            Debug.Log("South: " + (s ? "T" : "F"));
-            Debug.Log("West: " + (w ? "T" : "F"));
-        }
-        if (a)
+        if (c)
         {
             edges[CompassCentre] = 0f; // actuall will be by initialisation!
-            if (debug) Debug.Log("a: " + ShowEdges());
-            if (!n) // nothing to the north, so slope that way
+            if (!s) // (!n) some reason n/s seems swapped nothing to the north, so slope that way
             {
                 edges[(int)Compass.NW] = 1f;
                 edges[(int)Compass.N] = 1f;
                 edges[(int)Compass.NE] = 1f;
-                if (debug) Debug.Log("n: " + ShowEdges());
             }
             if (!e) // nothing to the east, so slope that way
             {
                 edges[(int)Compass.NE] = 1f;
                 edges[(int)Compass.E] = 1f;
                 edges[(int)Compass.SE] = 1f;
-                if (debug) Debug.Log("e: " + ShowEdges());
             }
-            if (!s) // nothing to the south, so slope that way
+            if (!n) // (!s) some reason n/s seems swapped nothing to the south, so slope that way
             {
                 edges[(int)Compass.SE] = 1f;
                 edges[(int)Compass.S] = 1f;
                 edges[(int)Compass.SW] = 1f;
-                if (debug) Debug.Log("s: " + ShowEdges());
             }
             if (!w) // nothing to the west, so slope that way
             {
                 edges[(int)Compass.SW] = 1f;
                 edges[(int)Compass.W] = 1f;
                 edges[(int)Compass.NW] = 1f;
-                if (debug) Debug.Log("w: " + ShowEdges());
+            }
+            if (!sw) // (!nw) some reason n/s seems swapped nothing to the north-west, so slope that way
+            {
+                edges[(int)Compass.NW] = 1f;
+            }
+            if (!se) // (!ne) some reason n/s seems swapped nothing to the north-east, so slope that way
+            {
+                edges[(int)Compass.NE] = 1f;
+            }
+            if (!nw) // (!sw) some reason n/s seems swapped nothing to the south-west, so slope that way
+            {
+                edges[(int)Compass.SW] = 1f;
+            }
+            if (!ne) // (!se) some reason n/s seems swapped nothing to the south-east, so slope that way
+            {
+                edges[(int)Compass.SE] = 1f;
             }
         }
         else // nothing here!
             for (int i = 0; i < CompassFullSize; i++) edges[i] = 1f;
-        if (debug)
+
+        index = 0;
+        for(int i = 0; i < edges.Length; i++)
         {
-            Debug.Log("Result: " + tostring + " - " + ShowEdges());
-            Debug.Log(CornorDirection.NE + " = " + ShowCorners(getCorners(CornorDirection.NE)));
-            Debug.Log(CornorDirection.NW + " = " + ShowCorners(getCorners(CornorDirection.NW)));
-            Debug.Log(CornorDirection.SW + " = " + ShowCorners(getCorners(CornorDirection.SW)));
-            Debug.Log(CornorDirection.SE + " = " + ShowCorners(getCorners(CornorDirection.SE)));
+            index *= 2;
+            index += (int)edges[i];
         }
 
+        tostring = "<" + BoolAsStr(nw) + BoolAsStr(n) + BoolAsStr(ne) +
+            "/" + BoolAsStr(w) + BoolAsStr(c) + BoolAsStr(e) +
+            "/" + BoolAsStr(sw) + BoolAsStr(s) + BoolAsStr(se) +
+            ">(" + index + ")" + ShowEdges();
     }
 
-    public float [] getCorners(CornorDirection cornorDirection)
+    public float [] GetCorners(CornorDirection cornorDirection)
     {
         float[] values = { 0, 0, 0, 0 };
         switch (cornorDirection)
@@ -156,34 +142,6 @@ public class Anews
                 break;
         }
         return values;
-    }
-
-    public Slope GetSlope(CornorDirection cornor)
-    {
-        return directions[(int) cornor];
-    }
-
-    private Slope CalculateSlope(bool l, bool m, bool r)
-    {
-        if (l)
-        {
-            if (r)
-            {
-                if (m) return Slope.FLAT;
-                else return Slope.BOTH;
-            }
-            else return Slope.RIGHT;
-        }
-        else
-        {
-            if (r) return Slope.LEFT;
-            else return Slope.BOTH;
-        }
-    }
-
-    private float BoolAsFloat(bool b)
-    {
-        return b ? 0f : 1f;
     }
 
     private int BoolAsInt(bool b)

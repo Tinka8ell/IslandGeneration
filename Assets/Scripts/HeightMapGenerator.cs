@@ -38,7 +38,7 @@ public static class HeightMapGenerator {
 				if (!FalloffGenerator.falloffMaps.ContainsKey(anews.ToIndex()))
 					Debug.LogError("Missing falloutmap number: " + anews.ToIndex()
 						+ " of " + FalloffGenerator.falloffMaps.Keys.Count + " for anews: " + anews);
-				falloff = FalloffGenerator.getFalloffMap(anews).values; // otherwise check the neighbours
+				falloff = FalloffGenerator.GetFalloffMap(anews).values; // otherwise check the neighbours
 			}
 			//else Debug.Log("GenerateMap falloff map for " + coord + " with no anews");
 			for (int i = 0; i < width; i++)

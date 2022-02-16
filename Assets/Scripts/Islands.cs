@@ -13,11 +13,12 @@ public class Islands
 		return perlinValue > threshold;
 	}
 
-	public static bool IsFixedIsland(Vector2 coord, float xAdjust = 1f, float yAdjust = 1f)
+	public static bool IsFixedIsland(Vector2 coord, float xAdjust = 1f, float yAdjust = 1f, bool debug = false)
 	{
 		const int radix = 3;
 		const int slice = 2;
-		int pos = Mathf.FloorToInt(coord.x * xAdjust + coord.y * yAdjust);
+		int pos = Mathf.RoundToInt(coord.x * xAdjust + coord.y * yAdjust);
+		if (debug) Debug.Log("IsFixed: coord = " + coord + ", pos = " + pos + ", mod = " + pos % radix);
 		pos %= radix;
 		if (pos < 0) pos += radix;
 		return pos < slice;
@@ -31,8 +32,8 @@ public class Islands
 	static bool Check(Vector2 coord, bool debug = false)
 	{
 		bool isLand = false;
-		// isLand = IsIsland(coord, .95f);
-		isLand = IsFixedIsland(coord, 1f, 1f);
+		// isLand = IsIsland(coord, .95f); 
+		isLand = IsFixedIsland(coord, 1f, 1f, debug);
 		// isLand = EveryOther(coord);
 		if (debug) Debug.Log("Checking: " + coord + " returning: " + isLand);
 		return isLand;
@@ -40,28 +41,28 @@ public class Islands
 
 	public static Anews LocalNews(Vector2 coord, bool debug=false)
 	{
-		Anews anews = null;
+		bool nw = false;
+		bool n = false;
+		bool ne = false;
+		bool w = false;
+		bool e = false;
+		bool sw = false;
+		bool s = false;
+		bool se = false;
 		bool isIsland = Check(coord, debug);
 		if (isIsland)
         {
-			Vector2 nw = coord + new Vector2(-1, -1);
-			Vector2 n = coord + new Vector2(0, -1);
-			Vector2 ne = coord + new Vector2(1, -1);
-			Vector2 w = coord + new Vector2(-1, 0);
-			Vector2 e = coord + new Vector2(1, 0);
-			Vector2 sw = coord + new Vector2(-1, 1);
-			Vector2 s = coord + new Vector2(0, 1);
-			Vector2 se = coord + new Vector2(1, 1);
-			// anews = new Anews(Check(nw, debug), Check(n, debug), Check(ne, debug),
-			//	Check(e, debug), Check(w, debug),
-			//	Check(se, debug), Check(s, debug), Check(sw, debug));
-			anews = new Anews(isIsland, Check(n, debug), Check(e, debug), Check(s, debug), Check(w, debug));
+			nw = Check(coord + new Vector2(-1, -1), debug);
+			n =  Check(coord + new Vector2(0, -1), debug);
+			ne = Check(coord + new Vector2(1, -1), debug);
+			w =  Check(coord + new Vector2(-1, 0), debug);
+			e =  Check(coord + new Vector2(1, 0), debug);
+			sw = Check(coord + new Vector2(-1, 1), debug);
+			s =  Check(coord + new Vector2(0, 1), debug);
+			se = Check(coord + new Vector2(1, 1), debug);
 		}
-		if (debug)
-        {
-			if (anews != null) Debug.Log("LocalNews for: " + coord + " is " + anews + " with index: " + anews.ToIndex());
-			else Debug.Log("LocalNews for: " + coord + " is " + anews + " (no index)");
-		}
+		Anews anews = new Anews(nw, n, ne, w, isIsland, e, sw, s, se);
+		if (debug) Debug.Log("LocalNews for: " + coord + " is " + anews + " with index: " + anews.ToIndex());
 		return anews;
 	}
 

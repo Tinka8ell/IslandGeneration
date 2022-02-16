@@ -21,13 +21,10 @@ public enum CornorDirection
 
 public struct FalloffGenerator
 {
-	private static float[] ramp;
-
 	private static int size = 0;
 	private static float a = 3;
 	private static float b = 2.2f;
 	private static FalloffSettings falloffSettings;
-	private static int half;
 
 	public static Dictionary<int, FalloffMap> falloffMaps = new Dictionary<int, FalloffMap>();
 	public static FalloffMap emptyMap;
@@ -54,50 +51,37 @@ public struct FalloffGenerator
 		}
 		if (regen)
 		{
-			Debug.LogWarning("Regenning falloff: size = " + size + ", a = " + a + ", b = " + b);
+			// Debug.LogWarning("Regenning falloff: size = " + size + ", a = " + a + ", b = " + b);
 			// build all the maps:
 			falloffMaps.Clear(); // remove old ones
 			falloffSettings = fs;
 			/*
 			 * Now build on demand ...
 			*/
-			bool[] onOff = { true, false };
-			// bool nw;
+			bool nw;
 			bool n;
-			// bool ne;
+			bool ne;
 			bool w;
-			bool e;
-			// bool sw;
-			bool s;
-			// bool se;
-
 			bool us;
+			bool e;
+			bool sw;
+			bool s;
+			bool se;
 
-			for (int i = 1; i < 0b0010_0000; i ++)
+			for (int i = 1; i < 0b10_0000_0000; i ++)
             {
-				/*
-				nw = (i & 0b_0000_0001) != 0;
-				n = (i & 0b_0000_0010) != 0;
-				ne = (i & 0b_0000_0100) != 0;
-				w = (i & 0b_0000_1000) != 0;
-				e = (i & 0b_0001_0000) != 0;
-				sw = (i & 0b_0010_0000) != 0;
-				s = (i & 0b_0100_0000) != 0;
-				se = (i & 0b_1000_0000) != 0;
-				Anews anews = new Anews(nw, n, ne, e, w, se, s, sw);
-				*/
-				n = (i & 0b_0000_0001) != 0;
-				w = (i & 0b_0000_0010) != 0;
-				e = (i & 0b_0000_0100) != 0;
-				s = (i & 0b_0000_1000) != 0;
+				nw = (i & 0b1_0000_0000) != 0;
+				n = (i & 0b_1000_0000) != 0;
+				ne = (i & 0b_0100_0000) != 0;
+				w = (i & 0b_0010_0000) != 0;
 				us = (i & 0b_0001_0000) != 0;
-				Anews anews = new Anews(us, n, e, s, w);
+				e = (i & 0b_0000_1000) != 0;
+				sw = (i & 0b_0000_0100) != 0;
+				s = (i & 0b_0000_0010) != 0;
+				se = (i & 0b_0000_0001) != 0;
+				Anews anews = new Anews(nw, n, ne, w, us, e, se, s, sw);
 				int index = anews.ToIndex();
-				bool debug = (index == 13);
-				/* 
-				Debug.Log("Trying falloutmap number: " + anews.ToIndex()
-						+ " of " + FalloffGenerator.falloffMaps.Keys.Count + " for anews: " + anews);
-				*/
+				bool debug = false; //  (index == 13);
 				if (!falloffMaps.ContainsKey(index)) // haven't drawn it yet
 				{
 					if (debug) Debug.LogWarning("Adding falloutmap number: " + anews.ToIndex()
@@ -111,15 +95,15 @@ public struct FalloffGenerator
 				}
 			}
 
-			// Add the empty on too;
+			// Add the empty one too;
 			emptyMap = FalloffGenerator.GenerateEmptyMap(size);
 		}
 	}
 
-    internal static FalloffMap getFalloffMap(Anews anews)
+    internal static FalloffMap GetFalloffMap(Anews anews)
     {
 		int index = anews.ToIndex();
-		bool debug = (index == 183);
+		bool debug = false; // (index == 183);
 		if (!falloffMaps.ContainsKey(index)) // haven't drawn it yet
 		{
 			if (debug) Debug.LogWarning("Adding falloutmap number: " + anews.ToIndex()
@@ -178,7 +162,7 @@ public struct FalloffGenerator
 					break;
 			}
 			if (debug) Debug.LogWarning("Direction: " + cd + ", index: " + index);
-			QuadSlope(values, x, y, cornerSize, falloffSettings, anews.getCorners(cd), debug, cd, index);
+			QuadSlope(values, x, y, cornerSize, falloffSettings, anews.GetCorners(cd), debug, cd, index);
 		}
 		return new FalloffMap(values);
 	}
@@ -252,260 +236,6 @@ public struct FalloffGenerator
 			+ " with v = " + v + " -> " + result);
 		return result;
 	}
-
-	private enum SlopeDirection
-	{
-		UP,
-		FLAT,
-		DOWN
-	}
-
-	public static FalloffMap GenerateFalloffMap(int size, Anews anews, bool debug= false, int index = 0)
-	{
-		float[,] values = new float[size, size];
-		int[] tl = { 0, size };
-		int[] br = { 0, size };
-		SlopeDirection w2e = SlopeDirection.FLAT;
-		SlopeDirection n2s = SlopeDirection.FLAT;
-
-		for (CornorDirection d = 0; (int)d < 4; d++)
-		{
-			Slope slope = anews.GetSlope(d);
-			switch (d)
-			{
-				case CornorDirection.NE:
-					tl[0] = (size - 1) / 2;
-					tl[1] = 0;
-					br[0] = size;
-					br[1] = (size + 1) / 2; 
-                    switch (slope)
-                    {
-						case Slope.FLAT:
-							w2e = SlopeDirection.FLAT;
-							n2s = SlopeDirection.FLAT;
-							break;
-						case Slope.LEFT:
-							w2e = SlopeDirection.FLAT;
-							n2s = SlopeDirection.UP;
-							break;
-						case Slope.RIGHT:
-							w2e = SlopeDirection.DOWN;
-							n2s = SlopeDirection.FLAT;
-							break;
-						case Slope.BOTH:
-							w2e = SlopeDirection.DOWN;
-							n2s = SlopeDirection.UP;
-							break;
-					}
-					break;
-				case CornorDirection.SE:
-					tl[0] = (size - 1) / 2;
-					tl[1] = (size - 1) / 2;
-					br[0] = size;
-					br[1] = size;
-					switch (slope)
-					{
-						case Slope.FLAT:
-							w2e = SlopeDirection.FLAT;
-							n2s = SlopeDirection.FLAT;
-							break;
-						case Slope.LEFT:
-							w2e = SlopeDirection.DOWN;
-							n2s = SlopeDirection.FLAT;
-							break;
-						case Slope.RIGHT:
-							w2e = SlopeDirection.FLAT;
-							n2s = SlopeDirection.DOWN;
-							break;
-						case Slope.BOTH:
-							w2e = SlopeDirection.DOWN;
-							n2s = SlopeDirection.DOWN;
-							break;
-					}
-					break;
-				case CornorDirection.SW:
-					tl[0] = 0;
-					tl[1] = (size - 1) / 2; 
-					br[0] = (size + 1) / 2;
-					br[1] = size;
-					switch (slope)
-					{
-						case Slope.FLAT:
-							w2e = SlopeDirection.FLAT;
-							n2s = SlopeDirection.FLAT;
-							break;
-						case Slope.LEFT:
-							w2e = SlopeDirection.FLAT;
-							n2s = SlopeDirection.DOWN;
-							break;
-						case Slope.RIGHT:
-							w2e = SlopeDirection.UP;
-							n2s = SlopeDirection.FLAT;
-							break;
-						case Slope.BOTH:
-							w2e = SlopeDirection.UP;
-							n2s = SlopeDirection.DOWN;
-							break;
-					}
-					break;
-				case CornorDirection.NW:
-					tl[0] = 0;
-					tl[1] = 0;
-					br[0] = (size + 1) / 2;
-					br[1] = (size + 1) / 2;
-					switch (slope)
-					{
-						case Slope.FLAT:
-							w2e = SlopeDirection.FLAT;
-							n2s = SlopeDirection.FLAT;
-							break;
-						case Slope.LEFT:
-							w2e = SlopeDirection.UP;
-							n2s = SlopeDirection.FLAT;
-							break;
-						case Slope.RIGHT:
-							w2e = SlopeDirection.FLAT;
-							n2s = SlopeDirection.UP;
-							break;
-						case Slope.BOTH:
-							w2e = SlopeDirection.UP;
-							n2s = SlopeDirection.UP;
-							break;
-					}
-					break;
-			}
-			if (debug) Debug.LogWarning("Direction: " + d + ", index: " + index);
-			FillSlope(values, tl, br, w2e, n2s, debug, d, index);
-		}
-		return new FalloffMap(values);
-	}
-
-	private static void FillSlope(
-		float[,] values, int[] tl, int[] br,
-		SlopeDirection w2e, SlopeDirection n2s,
-		bool debug = false, CornorDirection d = CornorDirection.NE, int index = 0)
-	{
-		if (debug) Debug.Log("FillSlope: (" + tl[0] + ", " + tl[1] + "), (" + br[0] + ", " + br[1]
-			+ "), w2e:" + w2e + ", n2s: " + n2s);
-		int iInc = 0;
-		int jInc = 0;
-
-		switch (w2e)
-		{
-			case SlopeDirection.UP:
-				iInc = -1;
-				break;
-			case SlopeDirection.FLAT:
-				iInc = 0; // special case
-				break;
-			case SlopeDirection.DOWN:
-				iInc = 1;
-				break;
-		}
-		switch (n2s)
-		{
-			case SlopeDirection.UP:
-				jInc = -1;
-				break;
-			case SlopeDirection.FLAT:
-				jInc = 0; // special case
-				break;
-			case SlopeDirection.DOWN:
-				jInc = 1;
-				break;
-		}
-		if (debug) Debug.Log("Calc: tl[0] = " + tl[0] + ", br[0] = " + br[0] + ", iInc = " + iInc
-			+ ", tl[1] = " + tl[1] + ", br[1] = " + br[1] + ", jInc = " + jInc);
-		if (iInc == 0 & jInc == 0) // we are flat and high
-		{
-			if (debug) Debug.Log("Flat: (" + tl[0] + ", " + tl[1] + ") - (" + br[0] + ", " + br[1]
-				+ ") - (" + values[tl[0], tl[1]] + ", " + values[br[0] - 1, br[1] - 1] + ")");
-			for (int i = tl[0]; i < br[0]; i++)
-			{
-				for (int j = tl[1]; j < br[1]; j++)
-				{
-					values[i, j] = 0; // shouldn't be necessary, but what the hell!
-				}
-			}
-		}
-		else if (iInc != 0 & jInc != 0) // we are sloping in two directions 
-		{
-			if (debug) Debug.Log("Both: (" + tl[0] + ", " + tl[1] + ") - (" + br[0] + ", " + br[1]
-				+ ") - (" + values[tl[0], tl[1]] + ", " + values[br[0] - 1, br[1] - 1] + ")");
-			int k = 0;
-			if (iInc < 0) k = ramp.Length - 1; // start from other end!
-			for (int i = tl[0]; i < br[0]; i++)
-			{
-				if (k >= ramp.Length) Debug.LogError("k:" + k + " > " + ramp.Length + " for (" + i + ", y)");
-				if (k < 0) Debug.LogError("k:" + k + " < 0 for (" + i + ", y)");
-				float xVal = ramp[k];
-				int l = 0;
-				if (jInc < 0) l = ramp.Length - 1; // start from other end!
-				for (int j = tl[1]; j < br[1]; j++)
-				{
-					if (l >= ramp.Length) Debug.LogError("l:" + l + " > " + ramp.Length + " for (x, " + j + ")");
-					if (l < 0) Debug.LogError("l:" + l + " < 0 for (x, " + j + ")");
-					float yVal = ramp[l];
-					values[i, j] = (xVal < yVal) ? yVal : xVal; // use the lowest
-					if (debug && l == 20 && k == 20) Debug.LogWarning("Both: l = " + l + ", k = " + k + ", x = " + xVal + ", y = " + yVal + ", v = " + values[i, j]);
-					l += jInc;
-				}
-				k += iInc;
-			}
-		}
-		else if (iInc == 0) // so jInc != 0
-		{
-			if (debug) Debug.Log("Vert: (" + tl[0] + ", " + tl[1] + ") - (" + br[0] + ", " + br[1]
-				+ ") - (" + values[tl[0], tl[1]] + ", " + values[br[0] - 1, br[1] - 1] + ")");
-			int l = 0;
-			if (jInc < 0) l = ramp.Length - 1; // start from other end!
-			for (int j = tl[1]; j < br[1]; j++)
-			{
-				if (l >= ramp.Length) Debug.LogError("l:" + l + " > " + ramp.Length + " for (x, " + j + ")");
-				if (l < 0)
-                {
-					Debug.LogError("Index: " + index + ", SlopeDirection:" + d);
-					Debug.LogError("FillSlope: (" + tl[0] + ", " + tl[1] + "), (" + br[0] + ", " + br[1]
-						+ "), w2e:" + w2e + ", n2s: " + n2s);
-					Debug.LogError("Vert: (" + tl[0] + ", " + tl[1] + ") - (" + br[0] + ", " + br[1]
-						+ ") - (" + values[tl[0], tl[1]] + ", " + values[br[0] - 1, br[1] - 1] + ")");
-					Debug.LogError("l:" + l + " < 0 for (x, " + j + ")");
-				}
-				float yVal = ramp[l];
-				int k = 0;
-				for (int i = tl[0]; i < br[0]; i++)
-				{
-					values[i, j] = yVal;  // use the y slope
-					if (debug && l == 20 && k == 20) Debug.LogWarning("Vert: l = " + l + ", k = " + k + ", y = " + yVal + ", v = " + values[i, j]);
-					k++;
-				}
-				l += jInc;
-			}
-		}
-		else // (jInc == 0 && iInc != 0)
-		{
-			if (debug) Debug.Log("Horiz: (" + tl[0] + ", " + tl[1] + ") - (" + br[0] + ", " + br[1]
-				+ ") - (" + values[tl[0], tl[1]] + ", " + values[br[0] - 1, br[1] - 1] + ")");
-			int k = 0;
-			if (iInc < 0) k = ramp.Length - 1; // start from other end!
-			for (int i = tl[0]; i < br[0]; i++)
-			{
-				if (k >= ramp.Length) Debug.LogError("k:" + k + " > " + ramp.Length + " for (" + i + ", y)");
-				if (k < 0) Debug.LogError("k:" + k + " < 0 for (" + i + ", y)");
-				float xVal = ramp[k];
-				int l = 0;
-				for (int j = tl[1]; j < br[1]; j++)
-				{
-					values[i, j] = xVal;  // use the x slope
-					if (debug && l == 20 && k == 20) Debug.LogWarning("Horiz: l = " + l + ", k = " + k + ", x = " + xVal + ", v = " + values[i, j]);
-					l++;
-				}
-				k += iInc;
-			}
-		}
-		if (debug) Debug.Log("After: (" + values[tl[0], tl[1]] + ", " + values[br[0] - 1, br[1] - 1] + ")");
-	}
-
 }
 
 public struct FalloffMap

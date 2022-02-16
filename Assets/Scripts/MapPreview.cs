@@ -30,9 +30,11 @@ public class MapPreview : MonoBehaviour {
 public void DrawMapInEditor() {
 		textureSettings.ApplyToMaterial (terrainMaterial);
 		textureSettings.UpdateMeshHeights (terrainMaterial, heightMapSettings.minHeight, heightMapSettings.maxHeight);
+		/*
 		Debug.Log("GenerateHeightMap(" +
 			meshSettings.numVertsPerLine + ", " + heightMapSettings + ", " + Vector2.zero + ", " +
 			heightMapSettings.useFalloff + ", " + coord + ")");
+		*/
 		HeightMap heightMap = new HeightMap(new float[1,1], 0f, 1f);
 		switch (drawMode)
 		{
@@ -53,13 +55,15 @@ public void DrawMapInEditor() {
 				DrawMesh (MeshGenerator.GenerateTerrainMesh (heightMap.values,meshSettings, editorPreviewLOD));
 				break;
 			case DrawMode.FalloffMap:
-				Anews anews = Islands.LocalNews(coord, coord.x == 0);
+				Anews anews = Islands.LocalNews(coord); //, true);
+				/*
 				if (anews != null) Debug.Log("Drawing falloff map for " + coord + " with anews: " + anews + " and index: " + anews.ToIndex());
 				else Debug.Log("Drawing falloff map for " + coord + " with no anews");
+				*/
 				if (!FalloffGenerator.falloffMaps.ContainsKey(anews.ToIndex()))
 					Debug.LogError("Missing falloutmap number: " + anews.ToIndex()
 						+ " of " + FalloffGenerator.falloffMaps.Keys.Count + " for anews: " + anews);
-				FalloffMap falloffMap = FalloffGenerator.getFalloffMap(anews); 
+				FalloffMap falloffMap = FalloffGenerator.GetFalloffMap(anews); 
 				DrawTexture(TextureGenerator.TextureFromHeightMap(new HeightMap(falloffMap.values, 0, 1)));
 				break;
 			case DrawMode.IslandMap:
