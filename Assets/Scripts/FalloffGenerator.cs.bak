@@ -174,17 +174,22 @@ public struct FalloffGenerator
 		float c = abcd[2];
 		float d = abcd[3];
 
-		if (debug) Debug.Log("QuadSlope: (" + x + ", " + y + "), size = " + size
-			+ "), size = " + numberOfVertices + ", abce = (" + a + ", " + b + ", " + c + ", " + d + ")");
+		if (debug) Debug.Log("QuadSlope: (" + x + ", " + y + "), size = " + size  
+			+ "), size = " + numberOfVertices + ", abce = (" + a + ", " + b + ", " + c + ", " + d + ")"
+			+ ", direction = " + cd);
 
 		for (int i = 1; i < numberOfVertices; i++)
 		{
 			for (int j = 1; j < numberOfVertices; j++)
 			{
-				values[x + i, y + j] = Evaluate(
+				bool debug2 = debug && (i == 10) && (j == 10);
+				if (debug2) Debug.Log("At: i = " + i + ", j = " + j + " => (" + (x + i) + ", " + (y + j) + ")");
+				values[x + i, y + j] = // ((i==10)||(j==10))? 1: 
+					Evaluate(
 						QuadLerp(
 							a, b, c, d, 
-							i / (numberOfVertices - 1f), j / (numberOfVertices - 1f)),
+							i / (numberOfVertices - 1f), j / (numberOfVertices - 1f), 
+							debug2),
 						falloffSettings.a, falloffSettings.b
 					);
 			}

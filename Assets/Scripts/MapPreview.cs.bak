@@ -20,8 +20,6 @@ public class MapPreview : MonoBehaviour {
 
 	public Vector2 coord = Vector2.zero;
 
-	public Islands.FindMode findMode;
-
 	[Range(0,MeshSettings.numSupportedLODs-1)]
 	public int editorPreviewLOD;
 	public bool autoUpdate;
@@ -45,10 +43,6 @@ public void DrawMapInEditor() {
 				heightMap = HeightMapGenerator.GenerateHeightMap(
 					meshSettings.numVertsPerLine, heightMapSettings, Vector2.zero,
 					heightMapSettings.useFalloff, coord);
-				break;
-			case DrawMode.IslandMap:
-			case DrawMode.FalloffMap:
-				coord = Islands.FindAnIsland(coord, heightMapSettings.islandNoiseSettings, findMode);
 				break;
 		}
 
@@ -76,7 +70,6 @@ public void DrawMapInEditor() {
 				DrawTexture(TextureGenerator.TextureFromHeightMap(new HeightMap(falloffMap.values, 0, 1)));
 				break;
 			case DrawMode.IslandMap:
-				Debug.Log("Drawing island map for " + coord);
 				DrawTexture(
 					TextureGenerator.TextureFromHeightMap(
 						new HeightMap(

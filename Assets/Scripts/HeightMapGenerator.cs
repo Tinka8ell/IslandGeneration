@@ -29,7 +29,7 @@ public static class HeightMapGenerator {
 
 		if (useFalloff) // need to modify the map by falloff in range minValue to maxValue
 		{
-			Anews anews = Islands.LocalNews(coord);
+			Anews anews = Islands.LocalNews(coord, settings.islandNoiseSettings);
 			float normRange = maxValue - minValue;
 			float[,] falloff = FalloffGenerator.emptyMap.values; // assume not part of island
 			if (anews != null)

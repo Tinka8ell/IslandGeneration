@@ -65,7 +65,7 @@ public class Anews
     {
         if (c)
         {
-            edges[CompassCentre] = 0f; // actuall will already be by initialisation!
+            edges[CompassCentre] = 0f; // actuall will be by initialisation!
             if (!s) // (!n) some reason n/s seems swapped nothing to the north, so slope that way
             {
                 edges[(int)Compass.NW] = 1f;

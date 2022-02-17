@@ -7,6 +7,7 @@ public class HeightMapSettings : UpdatableData {
 	public NoiseSettings noiseSettings;
 
 	public bool useFalloff;
+	public IslandNoiseSettings islandNoiseSettings;
 
 	public float heightMultiplier;
 	public AnimationCurve heightCurve;

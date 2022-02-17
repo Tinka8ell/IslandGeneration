@@ -57,7 +57,10 @@ public class TerrainGenerator : MonoBehaviour {
 		int currentChunkCoordX = Mathf.RoundToInt(viewerPosition.x / meshWorldSize);
 		int currentChunkCoordY = Mathf.RoundToInt(viewerPosition.y / meshWorldSize);
 		Vector2 coord = new Vector2(currentChunkCoordX, currentChunkCoordY);
-		Anews anews = Islands.LocalNews(coord, true);
+		Anews anews = Islands.LocalNews(
+			coord, 
+			heightMapSettings.islandNoiseSettings, 
+			true);
 		if (anews != null) Debug.Log("Start pos: " + coord + " with anews: " + anews + " and index: " + anews.ToIndex());
 		else Debug.Log("Start pos: " + coord + " with no anews");
 		UpdateVisibleChunks();
