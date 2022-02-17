@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -29,6 +29,8 @@ public class TerrainGenerator : MonoBehaviour {
 	Dictionary<Vector2, TerrainChunk> terrainChunkDictionary = new Dictionary<Vector2, TerrainChunk>();
 	List<TerrainChunk> visibleTerrainChunks = new List<TerrainChunk>();
 
+	bool once = true;
+
 	private void Awake()
 	{
 		MapPreview mapPreview = GetComponentInParent<MapPreview>();
@@ -58,24 +60,34 @@ public class TerrainGenerator : MonoBehaviour {
 		int currentChunkCoordY = Mathf.RoundToInt(viewerPosition.y / meshWorldSize);
 		Vector2 coord = new Vector2(currentChunkCoordX, currentChunkCoordY);
 		Anews anews = Islands.LocalNews(
-			coord, 
-			heightMapSettings.islandNoiseSettings, 
-			true);
+			coord,
+			heightMapSettings.islandNoiseSettings); //, true);
 		if (anews != null) Debug.Log("Start pos: " + coord + " with anews: " + anews + " and index: " + anews.ToIndex());
 		else Debug.Log("Start pos: " + coord + " with no anews");
 		UpdateVisibleChunks();
+		viewerPositionOld = new Vector2(meshWorldSize * meshWorldSize, meshWorldSize * meshWorldSize); // some way away!
+		Debug.Log("Start: " + viewerPosition + ", old: " + viewerPositionOld + ", diff: " + (viewerPositionOld - viewerPosition) + ", size: " + (viewerPositionOld - viewerPosition).sqrMagnitude + ", vs:" + sqrViewerMoveThresholdForChunkUpdate);
 	}
 
 	void Update() {
-		viewerPosition = new Vector2 (viewer.position.x, viewer.position.z);
+		viewerPosition = new Vector2 (viewer.position.x, viewer.position.z); 
 
-		if (viewerPosition != viewerPositionOld) {
-			foreach (TerrainChunk chunk in visibleTerrainChunks) {
-				chunk.UpdateCollisionMesh ();
-			}
+		if (once)
+		{
+			once = false;
+			Debug.LogWarning("First: " + viewerPosition + ", old: " + viewerPosition + ", diff: " + (viewerPositionOld - viewerPosition) + ", size: " + (viewerPositionOld - viewerPosition).sqrMagnitude + ", vs:" + sqrViewerMoveThresholdForChunkUpdate);
 		}
-
+		/*
+		if (viewerPosition != viewerPositionOld) {
+			Debug.LogWarning("Update changed position: " + (viewerPositionOld - viewerPosition) + ", size: " + (viewerPositionOld - viewerPosition).sqrMagnitude + ", vs:" + sqrViewerMoveThresholdForChunkUpdate);
+		}
+		*/
 		if ((viewerPositionOld - viewerPosition).sqrMagnitude > sqrViewerMoveThresholdForChunkUpdate) {
+			// Debug.LogWarning("Update close enough to update chunks: " + (viewerPositionOld - viewerPosition) + ", size: " + (viewerPositionOld - viewerPosition).sqrMagnitude + ", vs:" + sqrViewerMoveThresholdForChunkUpdate);
+			foreach (TerrainChunk chunk in visibleTerrainChunks)
+			{
+				chunk.UpdateCollisionMesh();
+			}
 			viewerPositionOld = viewerPosition;
 			UpdateVisibleChunks ();
 		}

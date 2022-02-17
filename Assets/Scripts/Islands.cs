@@ -108,7 +108,7 @@ public static class Islands
 		isLand = IsIsland(coord, settings, debug); 
 		// isLand = IsFixedIsland(coord, 1f, 1f, debug);
 		// isLand = EveryOther(coord);
-		if (debug) Debug.Log("Checking: " + coord + " returning: " + isLand);
+		// if (debug) Debug.Log("Checking: " + coord + " returning: " + isLand);
 		return isLand;
 	}
 
@@ -165,7 +165,7 @@ public static class Islands
                     {
 						minR = r;
 						nearest = test;
-						Debug.Log("Created nearer island at: " + nearest);
+						// Debug.Log("Created nearer island at: " + nearest);
 					}
 				}
 			}

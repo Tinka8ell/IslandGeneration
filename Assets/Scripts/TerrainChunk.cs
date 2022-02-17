@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class TerrainChunk {
 	
@@ -138,19 +138,25 @@ public class TerrainChunk {
 	public void UpdateCollisionMesh() {
         if (!hasSetCollider) {
 			float sqrDstFromViewerToEdge = bounds.SqrDistance (viewerPosition);
-
+			/*
+			Debug.Log("UpdateCollisionMesh - no colider at: " + coord + 
+				", dist: " + sqrDstFromViewerToEdge + 
+				", LOD dist: " + detailLevels[colliderLODIndex].sqrVisibleDstThreshold +
+				", threshold: " + colliderGenerationDistanceThreshold * colliderGenerationDistanceThreshold);
+			*/
 			if (sqrDstFromViewerToEdge < detailLevels [colliderLODIndex].sqrVisibleDstThreshold) {
 				if (!lodMeshes [colliderLODIndex].hasRequestedMesh) {
 					lodMeshes [colliderLODIndex].RequestMesh (heightMap, meshSettings);
 				}
 			}
 
-			if (sqrDstFromViewerToEdge < colliderGenerationDistanceThreshold * colliderGenerationDistanceThreshold) {
+			// if (sqrDstFromViewerToEdge < colliderGenerationDistanceThreshold * colliderGenerationDistanceThreshold) {
 				if (lodMeshes [colliderLODIndex].hasMesh) {
 					meshCollider.sharedMesh = lodMeshes [colliderLODIndex].mesh;
 					hasSetCollider = true;
+					// Debug.LogWarning("UpdateCollisionMesh - colider added: " + coord);
 				}
-			}
+			// }
 		}
 	}
 
@@ -185,7 +191,9 @@ class LODMesh {
 
 	public void RequestMesh(HeightMap heightMap, MeshSettings meshSettings) {
 		hasRequestedMesh = true;
-		ThreadedDataRequester.RequestData (() => MeshGenerator.GenerateTerrainMesh (heightMap.values, meshSettings, lod), OnMeshDataReceived);
+		ThreadedDataRequester.RequestData(
+			() => MeshGenerator.GenerateTerrainMesh (heightMap.values, meshSettings, lod), 
+			OnMeshDataReceived);
 	}
 
 }

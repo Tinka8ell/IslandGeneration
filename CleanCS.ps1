@@ -1,0 +1,1 @@
+foreach($f in Get-ChildItem -LiteralPath ./Assets -Filter *.cs -Name -Recurse) {(Get-Content ./Assets/$f) | Set-Content ./Assets/$f}
