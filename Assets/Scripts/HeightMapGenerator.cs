@@ -29,18 +29,12 @@ public static class HeightMapGenerator {
 
 		if (useFalloff) // need to modify the map by falloff in range minValue to maxValue
 		{
-			Anews anews = Islands.LocalNews(coord, settings.islandNoiseSettings);
 			float normRange = maxValue - minValue;
-			float[,] falloff = FalloffGenerator.emptyMap.values; // assume not part of island
-			if (anews != null)
-            {
-				// Debug.Log("GenerateMap falloff map for " + coord + " with anews: " + anews + " and index: " + anews.ToIndex());
-				if (!FalloffGenerator.falloffMaps.ContainsKey(anews.ToIndex()))
-					Debug.LogError("Missing falloutmap number: " + anews.ToIndex()
-						+ " of " + FalloffGenerator.falloffMaps.Keys.Count + " for anews: " + anews);
-				falloff = FalloffGenerator.GetFalloffMap(anews).values; // otherwise check the neighbours
-			}
-			//else Debug.Log("GenerateMap falloff map for " + coord + " with no anews");
+			Anews anews = Islands.LocalNews(coord);
+			if (!FalloffGenerator.falloffMaps.ContainsKey(anews.ToIndex()))
+				Debug.LogError("Missing falloutmap number: " + anews.ToIndex()
+					+ " of " + FalloffGenerator.falloffMaps.Keys.Count + " for anews: " + anews);
+			float[,] falloff = FalloffGenerator.BuildFalloffMap(coord);
 			for (int i = 0; i < width; i++)
 			{
 				for (int j = 0; j < width; j++)

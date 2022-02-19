@@ -8,4 +8,7 @@ public class FalloffSettings : UpdatableData
 	public float a = 3;
 	public float b = 2.2f;
 
+	public IslandNoiseSettings islandNoiseSettings;
+
+
 }
