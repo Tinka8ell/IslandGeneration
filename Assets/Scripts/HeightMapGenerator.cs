@@ -3,29 +3,41 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public static class HeightMapGenerator {
+	private static DumpData dumpData;
 
 	public static HeightMap GenerateHeightMap(int width, HeightMapSettings settings, 
-		Vector2 sampleCentre, bool useFalloff, Vector2 coord) {
+		Vector2 sampleCentre, bool useFalloff, Vector2 coord, bool debug=false) {
 		// as we always use squares, use width for both dimentions!
-		float[,] values = Noise.GenerateNoiseMap (width, width, settings.noiseSettings, sampleCentre);
+		float[,] values = Noise.GenerateNoiseMap (width, settings.noiseSettings, sampleCentre);
+		
+		DumpData dumpData = new DumpData();
+		if (debug)
+        {
+			dumpData.width = width;
+			dumpData.sampleCentre = sampleCentre;
+			dumpData.useFalloff = useFalloff;
+			dumpData.coord = coord;
+			dumpData.CaptureNoise(values);
+		}
 
 		AnimationCurve heightCurve_threadsafe = new AnimationCurve (settings.heightCurve.keys);
 
 		float minValue = float.MaxValue;
 		float maxValue = float.MinValue;
 
-		for (int i = 0; i < width; i++) {
-			for (int j = 0; j < width; j++) {
+		for (int j = 0; j < width; j++) {
+			for (int i = 0; i < width; i++) {
 
-				values[i, j] *= heightCurve_threadsafe.Evaluate (values [i, j]) * settings.heightMultiplier;
-				if (values [i, j] > maxValue) {
-					maxValue = values [i, j];
+				values[j, i] *= heightCurve_threadsafe.Evaluate (values [j, i]) * settings.heightMultiplier;
+				if (values [j, i] > maxValue) {
+					maxValue = values [j, i];
 				}
-				if (values [i, j] < minValue) {
-					minValue = values [i, j];
+				if (values [j, i] < minValue) {
+					minValue = values [j, i];
 				}
 			}
 		}
+
 
 		if (useFalloff) // need to modify the map by falloff in range minValue to maxValue
 		{
@@ -35,16 +47,23 @@ public static class HeightMapGenerator {
 				Debug.LogError("Missing falloutmap number: " + anews.ToIndex()
 					+ " of " + FalloffGenerator.falloffMaps.Keys.Count + " for anews: " + anews);
 			float[,] falloff = FalloffGenerator.BuildFalloffMap(coord);
-			for (int i = 0; i < width; i++)
+			if (debug) dumpData.CaptureFalloffMap(falloff);
+			for (int j = 0; j < width; j++)
 			{
-				for (int j = 0; j < width; j++)
+				for (int i = 0; i < width; i++)
 				{
-					float normValue = (values[i, j] - minValue) / normRange;
-					normValue = Mathf.Clamp01(normValue - falloff[i, j]);
-					values[i, j] = normValue * normRange + minValue;
+					/*
+					float normValue = (values[j, i] - minValue) / normRange;
+					normValue = Mathf.Clamp01(normValue - falloff[j, i]);
+					values[j, i] = normValue * normRange + minValue;
+					*/
+					//values[j, i] = Mathf.Clamp(values[j, i] - normRange * falloff[j, i], minValue, maxValue);
+					values[j, i] -= settings.heightMultiplier * falloff[j, i];
 				}
 			}
 		}
+		if (debug) dumpData.CaptureValues(values);
+		if (debug) dumpData.ToFile();
 
 		return new HeightMap (values, minValue, maxValue);
 	}

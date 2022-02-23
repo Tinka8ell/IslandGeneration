@@ -2,34 +2,34 @@ using UnityEngine;
 
 public class TerrainChunk {
 	
-	const float colliderGenerationDistanceThreshold = 5; 
-	public event System.Action<TerrainChunk, bool> onVisibilityChanged;
+//	const float colliderGenerationDistanceThreshold = 5; 
+	public event System.Action<TerrainChunk, bool> OnVisibilityChanged;
 	public Vector2 coord;
-	 
-	GameObject meshObject;
+
+    readonly GameObject meshObject;
 	Vector2 sampleCentre;
 	Bounds bounds;
 
-	MeshRenderer meshRenderer;
-	MeshFilter meshFilter;
-	MeshCollider meshCollider;
-
-	LODInfo[] detailLevels;
-	LODMesh[] lodMeshes;
-	int colliderLODIndex;
+    readonly MeshRenderer meshRenderer;
+    readonly MeshFilter meshFilter;
+    readonly MeshCollider meshCollider;
+    
+	readonly LODInfo[] detailLevels;
+    readonly LODMesh[] lodMeshes;
+    readonly int colliderLODIndex;
 
 	HeightMap heightMap;
 	bool heightMapReceived;
 	int previousLODIndex = -1;
 	bool hasSetCollider;
-	float maxViewDst;
+    readonly float maxViewDst;
 
-	HeightMapSettings heightMapSettings;
-	MeshSettings meshSettings;
-	Transform viewer;
+    readonly HeightMapSettings heightMapSettings;
+    readonly MeshSettings meshSettings;
+    readonly Transform viewer;
 
-	bool useFalloff;
-	FalloffGenerator falloffGenerator;
+    readonly bool useFalloff;
+//    readonly FalloffGenerator falloffGenerator;
 
 	public TerrainChunk(Vector2 coord, HeightMapSettings heightMapSettings, 
 		MeshSettings meshSettings, LODInfo[] detailLevels, int colliderLODIndex, 
@@ -61,9 +61,9 @@ public class TerrainChunk {
 		lodMeshes = new LODMesh[detailLevels.Length];
 		for (int i = 0; i < detailLevels.Length; i++) {
 			lodMeshes[i] = new LODMesh(detailLevels[i].lod);
-			lodMeshes[i].updateCallback += UpdateTerrainChunk;
+			lodMeshes[i].UpdateCallback += UpdateTerrainChunk;
 			if (i == colliderLODIndex) {
-				lodMeshes[i].updateCallback += UpdateCollisionMesh;
+				lodMeshes[i].UpdateCallback += UpdateCollisionMesh;
 			}
 		}
 
@@ -72,10 +72,11 @@ public class TerrainChunk {
 	}
 
 	public void Load() {
+		bool debug = false;
 		ThreadedDataRequester.RequestData(
 			() => HeightMapGenerator.GenerateHeightMap (
 				meshSettings.numVertsPerLine, heightMapSettings, sampleCentre, 
-				useFalloff, coord), OnHeightMapReceived);
+				useFalloff, coord, debug), OnHeightMapReceived);
 	}
 
 
@@ -87,7 +88,7 @@ public class TerrainChunk {
 		UpdateTerrainChunk ();
 	}
 
-	Vector2 viewerPosition {
+	Vector2 ViewerPosition {
 		get {
 			return new Vector2 (viewer.position.x, viewer.position.z);
 		}
@@ -96,7 +97,7 @@ public class TerrainChunk {
 
 	public void UpdateTerrainChunk() {
 		if (heightMapReceived) {
-			float viewerDstFromNearestEdge = Mathf.Sqrt (bounds.SqrDistance (viewerPosition));
+			float viewerDstFromNearestEdge = Mathf.Sqrt (bounds.SqrDistance (ViewerPosition));
 
 			bool wasVisible = IsVisible ();
 			bool visible = viewerDstFromNearestEdge <= maxViewDst;
@@ -128,8 +129,8 @@ public class TerrainChunk {
 			if (wasVisible != visible) {
 				
 				SetVisible (visible);
-				if (onVisibilityChanged != null) {
-					onVisibilityChanged (this, visible);
+				if (OnVisibilityChanged != null) {
+					OnVisibilityChanged (this, visible);
 				}
 			}
 		}
@@ -137,8 +138,8 @@ public class TerrainChunk {
 
 	public void UpdateCollisionMesh() {
         if (!hasSetCollider) {
-			float sqrDstFromViewerToEdge = bounds.SqrDistance (viewerPosition);
-			if (sqrDstFromViewerToEdge < detailLevels [colliderLODIndex].sqrVisibleDstThreshold) {
+			float sqrDstFromViewerToEdge = bounds.SqrDistance (ViewerPosition);
+			if (sqrDstFromViewerToEdge < detailLevels [colliderLODIndex].SqrVisibleDstThreshold) {
 				if (!lodMeshes [colliderLODIndex].hasRequestedMesh) {
 					lodMeshes [colliderLODIndex].RequestMesh (heightMap, meshSettings);
 				}
@@ -169,8 +170,8 @@ class LODMesh {
 	public Mesh mesh;
 	public bool hasRequestedMesh;
 	public bool hasMesh;
-	int lod;
-	public event System.Action updateCallback;
+    readonly int lod;
+	public event System.Action UpdateCallback;
 
 	public LODMesh(int lod) {
 		this.lod = lod;
@@ -180,7 +181,7 @@ class LODMesh {
 		mesh = ((MeshData)meshDataObject).CreateMesh ();
 		hasMesh = true;
 
-		updateCallback ();
+		UpdateCallback ();
 	}
 
 	public void RequestMesh(HeightMap heightMap, MeshSettings meshSettings) {

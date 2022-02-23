@@ -26,7 +26,7 @@ public class TerrainGenerator : MonoBehaviour {
 	float meshWorldSize;
 	int chunksVisibleInViewDst;
 
-	Dictionary<Vector2, TerrainChunk> terrainChunkDictionary = new Dictionary<Vector2, TerrainChunk>();
+    readonly Dictionary<Vector2, TerrainChunk> terrainChunkDictionary = new Dictionary<Vector2, TerrainChunk>();
     readonly List<TerrainChunk> visibleTerrainChunks = new List<TerrainChunk>();
 
 	private void Awake()
@@ -52,12 +52,12 @@ public class TerrainGenerator : MonoBehaviour {
 		chunksVisibleInViewDst = Mathf.RoundToInt(maxViewDst / meshWorldSize);
 		falloffGenerator.GenerateFalloffMaps(meshSettings.numVertsPerLine, falloffSettings);
 
-		// for debugging!
+// for debugging!
 		viewerPosition = new Vector2(viewer.position.x, viewer.position.z);
-		int currentChunkCoordX = Mathf.RoundToInt(viewerPosition.x / meshWorldSize);
-		int currentChunkCoordY = Mathf.RoundToInt(viewerPosition.y / meshWorldSize);
-		Vector2 coord = new Vector2(currentChunkCoordX, currentChunkCoordY);
-		Anews anews = Islands.LocalNews(coord); 
+//		int currentChunkCoordX = Mathf.RoundToInt(viewerPosition.x / meshWorldSize);
+//		int currentChunkCoordY = Mathf.RoundToInt(viewerPosition.y / meshWorldSize);
+//		Vector2 coord = new Vector2(currentChunkCoordX, currentChunkCoordY);
+//		Anews anews = Islands.LocalNews(coord); 
 		UpdateVisibleChunks();
 		viewerPositionOld = new Vector2(meshWorldSize * meshWorldSize, meshWorldSize * meshWorldSize); // some way away!
 	}
@@ -96,7 +96,7 @@ public class TerrainGenerator : MonoBehaviour {
 							viewedChunkCoord, heightMapSettings, meshSettings, detailLevels, 
 							colliderLODIndex, transform, viewer, mapMaterial);
 						terrainChunkDictionary.Add (viewedChunkCoord, newChunk);
-						newChunk.onVisibilityChanged += OnTerrainChunkVisibilityChanged;
+						newChunk.OnVisibilityChanged += OnTerrainChunkVisibilityChanged;
 						newChunk.Load ();
 					}
 				}
@@ -122,7 +122,7 @@ public struct LODInfo {
 	public float visibleDstThreshold;
 
 
-	public float sqrVisibleDstThreshold {
+	public float SqrVisibleDstThreshold {
 		get {
 			return visibleDstThreshold * visibleDstThreshold;
 		}

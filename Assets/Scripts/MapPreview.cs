@@ -34,12 +34,14 @@ public void DrawMapInEditor() {
 		textureSettings.ApplyToMaterial (terrainMaterial);
 		textureSettings.UpdateMeshHeights (terrainMaterial, heightMapSettings.minHeight, heightMapSettings.maxHeight);
 		HeightMap heightMap = new HeightMap(new float[1,1], 0f, 1f);
+		Vector2 sampleCentre = coord * meshSettings.meshWorldSize / meshSettings.meshScale;
+
 		switch (drawMode)
 		{
 			case DrawMode.NoiseMap:
 			case DrawMode.Mesh:
 				heightMap = HeightMapGenerator.GenerateHeightMap(
-					meshSettings.numVertsPerLine, heightMapSettings, Vector2.zero,
+					meshSettings.numVertsPerLine, heightMapSettings, sampleCentre,
 					heightMapSettings.useFalloff, coord);
 				break;
 			case DrawMode.IslandMap:
@@ -58,6 +60,7 @@ public void DrawMapInEditor() {
 				break;
 			case DrawMode.FalloffMap:
 				Anews anews = Islands.LocalNews(coord);
+				Debug.LogFormat("FalloffMap for {0} with anews: {1}", coord, anews);
 				if (!FalloffGenerator.falloffMaps.ContainsKey(anews.ToIndex()))
 					Debug.LogError("Missing falloutmap number: " + anews.ToIndex()
 						+ " of " + FalloffGenerator.falloffMaps.Keys.Count + " for anews: " + anews);
@@ -65,6 +68,12 @@ public void DrawMapInEditor() {
 				DrawTexture(TextureGenerator.TextureFromHeightMap(new HeightMap(falloffMap, 0, 1)));
 				break;
 			case DrawMode.IslandMap:
+				/*
+				for(Anews.Compass d = Anews.Compass.N; (int) d < Anews.CompassSize; d++)
+                {
+					Debug.LogFormat("{0} from {1} is {2}", d, coord, Islands.NextDoor(coord, d));
+                }
+				*/
 				DrawTexture(
 					TextureGenerator.TextureFromHeightMap(
 						new HeightMap(

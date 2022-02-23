@@ -8,7 +8,8 @@ public static class MeshGenerator {
 		int skipIncrement = (levelOfDetail == 0)?1:levelOfDetail * 2;
 		int numVertsPerLine = meshSettings.numVertsPerLine;
 
-		Vector2 topLeft = new Vector2 (-1, 1) * meshSettings.meshWorldSize / 2f;
+		// Assuming relative to centre, top left is half width to left (-1) and half width forward (+1)
+		Vector2 topLeft = new Vector2 (-1, +1) * meshSettings.meshWorldSize / 2f;
 
 		MeshData meshData = new MeshData (numVertsPerLine, skipIncrement, meshSettings.useFlatShading);
 
@@ -16,58 +17,63 @@ public static class MeshGenerator {
 		int meshVertexIndex = 0;
 		int outOfMeshVertexIndex = -1;
 
-		for (int y = 0; y < numVertsPerLine; y ++) {
-			for (int x = 0; x < numVertsPerLine; x ++) {
-				bool isOutOfMeshVertex = y == 0 || y == numVertsPerLine - 1 || x == 0 || x == numVertsPerLine - 1;
-				bool isSkippedVertex = x > 2 && x < numVertsPerLine - 3 && y > 2 && y < numVertsPerLine - 3 && ((x - 2) % skipIncrement != 0 || (y - 2) % skipIncrement != 0);
+		for (int row = 0; row < numVertsPerLine; row ++) {
+			for (int col = 0; col < numVertsPerLine; col ++) {
+				bool isOutOfMeshVertex = row == 0 || row == numVertsPerLine - 1 || col == 0 || col == numVertsPerLine - 1;
+				bool isSkippedVertex = col > 2 && col < numVertsPerLine - 3 && row > 2 && row < numVertsPerLine - 3 && ((col - 2) % skipIncrement != 0 || (row - 2) % skipIncrement != 0);
 				if (isOutOfMeshVertex) {
-					vertexIndicesMap [x, y] = outOfMeshVertexIndex;
+					vertexIndicesMap [col, row] = outOfMeshVertexIndex;
 					outOfMeshVertexIndex--;
 				} else if (!isSkippedVertex) {
-					vertexIndicesMap [x, y] = meshVertexIndex;
+					vertexIndicesMap [col, row] = meshVertexIndex;
 					meshVertexIndex++;
 				}
 			}
 		}
 
-		for (int y = 0; y < numVertsPerLine; y ++) {
-			for (int x = 0; x < numVertsPerLine; x++) {
-				bool isSkippedVertex = x > 2 && x < numVertsPerLine - 3 && y > 2 && y < numVertsPerLine - 3 && ((x - 2) % skipIncrement != 0 || (y - 2) % skipIncrement != 0);
+		for (int row = 0; row < numVertsPerLine; row ++) {
+			for (int col = 0; col < numVertsPerLine; col++) {
+				bool isSkippedVertex = col > 2 && col < numVertsPerLine - 3 && row > 2 && row < numVertsPerLine - 3 && ((col - 2) % skipIncrement != 0 || (row - 2) % skipIncrement != 0);
 
 				if (!isSkippedVertex) {
-					bool isOutOfMeshVertex = y == 0 || y == numVertsPerLine - 1 || x == 0 || x == numVertsPerLine - 1;
-					bool isMeshEdgeVertex = (y == 1 || y == numVertsPerLine - 2 || x == 1 || x == numVertsPerLine - 2) && !isOutOfMeshVertex;
-					bool isMainVertex = (x - 2) % skipIncrement == 0 && (y - 2) % skipIncrement == 0 && !isOutOfMeshVertex && !isMeshEdgeVertex;
-					bool isEdgeConnectionVertex = (y == 2 || y == numVertsPerLine - 3 || x == 2 || x == numVertsPerLine - 3) && !isOutOfMeshVertex && !isMeshEdgeVertex && !isMainVertex;
+					bool isOutOfMeshVertex = row == 0 || row == numVertsPerLine - 1 || col == 0 || col == numVertsPerLine - 1;
+					bool isMeshEdgeVertex = (row == 1 || row == numVertsPerLine - 2 || col == 1 || col == numVertsPerLine - 2) && !isOutOfMeshVertex;
+					bool isMainVertex = (col - 2) % skipIncrement == 0 && (row - 2) % skipIncrement == 0 && !isOutOfMeshVertex && !isMeshEdgeVertex;
+					bool isEdgeConnectionVertex = (row == 2 || row == numVertsPerLine - 3 || col == 2 || col == numVertsPerLine - 3) && !isOutOfMeshVertex && !isMeshEdgeVertex && !isMainVertex;
 
-					int vertexIndex = vertexIndicesMap [x, y];
-					Vector2 percent = new Vector2 (x - 1, y - 1) / (numVertsPerLine - 3);
+					int vertexIndex = vertexIndicesMap [col, row];
+					// calc relative position as %
+					Vector2 percent = new Vector2(col - 1, row - 1) / (numVertsPerLine - 3);
+					// calc offset poision from top left
 					Vector2 vertexPosition2D = topLeft + new Vector2(percent.x,-percent.y) * meshSettings.meshWorldSize;
-					float height = heightMap [x, y];
+					// was: float height = heightMap[col, row]; // but this has swapped coordinates!
+					float height = heightMap[row, col];  // match top left to bottom right in height map
 
 					if (isEdgeConnectionVertex) {
-						bool isVertical = x == 2 || x == numVertsPerLine - 3;
-						int dstToMainVertexA = ((isVertical)?y - 2:x-2) % skipIncrement;
+						bool isVertical = col == 2 || col == numVertsPerLine - 3;
+						int dstToMainVertexA = ((isVertical)?row - 2:col-2) % skipIncrement;
 						int dstToMainVertexB = skipIncrement - dstToMainVertexA;
 						float dstPercentFromAToB = dstToMainVertexA / (float)skipIncrement;
 
-						float heightMainVertexA = heightMap [(isVertical) ? x : x - dstToMainVertexA, (isVertical) ? y - dstToMainVertexA : y];
-						float heightMainVertexB = heightMap [(isVertical) ? x : x + dstToMainVertexB, (isVertical) ? y + dstToMainVertexB : y];
+						float heightMainVertexA = heightMap [(isVertical) ? col : col - dstToMainVertexA, (isVertical) ? row - dstToMainVertexA : row];
+						float heightMainVertexB = heightMap [(isVertical) ? col : col + dstToMainVertexB, (isVertical) ? row + dstToMainVertexB : row];
 
 						height = heightMainVertexA * (1 - dstPercentFromAToB) + heightMainVertexB * dstPercentFromAToB;
 					}
 
+					// Create the vertex using relative (x, y) => (x, y=h, z=y), but Unity uses left-handed axes!
+					// Shouldn't it be (x, h, -y)?
 					meshData.AddVertex (new Vector3(vertexPosition2D.x, height, vertexPosition2D.y), percent, vertexIndex);
 
-					bool createTriangle = x < numVertsPerLine - 1 && y < numVertsPerLine - 1 && (!isEdgeConnectionVertex || (x != 2 && y != 2));
+					bool createTriangle = col < numVertsPerLine - 1 && row < numVertsPerLine - 1 && (!isEdgeConnectionVertex || (col != 2 && row != 2));
 
 					if (createTriangle) {
-						int currentIncrement = (isMainVertex && x != numVertsPerLine - 3 && y != numVertsPerLine - 3) ? skipIncrement : 1;
+						int currentIncrement = (isMainVertex && col != numVertsPerLine - 3 && row != numVertsPerLine - 3) ? skipIncrement : 1;
 
-						int a = vertexIndicesMap [x, y];
-						int b = vertexIndicesMap [x + currentIncrement, y];
-						int c = vertexIndicesMap [x, y + currentIncrement];
-						int d = vertexIndicesMap [x + currentIncrement, y + currentIncrement];
+						int a = vertexIndicesMap [col, row];
+						int b = vertexIndicesMap [col + currentIncrement, row];
+						int c = vertexIndicesMap [col, row + currentIncrement];
+						int d = vertexIndicesMap [col + currentIncrement, row + currentIncrement];
 						meshData.AddTriangle (a, d, c);
 						meshData.AddTriangle (d, a, b);
 					}

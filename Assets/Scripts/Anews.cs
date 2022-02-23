@@ -66,7 +66,7 @@ public class Anews
         if (c)
         {
             edges[CompassCentre] = 0f; // actuall will already be by initialisation!
-            if (!s) // (!n) some reason n/s seems swapped nothing to the north, so slope that way
+            if (!n) // some reason n/s seems swapped nothing to the north, so slope that way
             {
                 edges[(int)Compass.NW] = 1f;
                 edges[(int)Compass.N] = 1f;
@@ -78,7 +78,7 @@ public class Anews
                 edges[(int)Compass.E] = 1f;
                 edges[(int)Compass.SE] = 1f;
             }
-            if (!n) // (!s) some reason n/s seems swapped nothing to the south, so slope that way
+            if (!s) // some reason n/s seems swapped nothing to the south, so slope that way
             {
                 edges[(int)Compass.SE] = 1f;
                 edges[(int)Compass.S] = 1f;
@@ -90,19 +90,19 @@ public class Anews
                 edges[(int)Compass.W] = 1f;
                 edges[(int)Compass.NW] = 1f;
             }
-            if (!sw) // (!nw) some reason n/s seems swapped nothing to the north-west, so slope that way
+            if (!nw) // some reason n/s seems swapped nothing to the north-west, so slope that way
             {
                 edges[(int)Compass.NW] = 1f;
             }
-            if (!se) // (!ne) some reason n/s seems swapped nothing to the north-east, so slope that way
+            if (!ne) // some reason n/s seems swapped nothing to the north-east, so slope that way
             {
                 edges[(int)Compass.NE] = 1f;
             }
-            if (!nw) // (!sw) some reason n/s seems swapped nothing to the south-west, so slope that way
+            if (!sw) // some reason n/s seems swapped nothing to the south-west, so slope that way
             {
                 edges[(int)Compass.SW] = 1f;
             }
-            if (!ne) // (!se) some reason n/s seems swapped nothing to the south-east, so slope that way
+            if (!se) // some reason n/s seems swapped nothing to the south-east, so slope that way
             {
                 edges[(int)Compass.SE] = 1f;
             }
