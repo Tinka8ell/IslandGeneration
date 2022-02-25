@@ -6,7 +6,8 @@ public static class HeightMapGenerator {
 	private static DumpData dumpData;
 
 	public static HeightMap GenerateHeightMap(int width, HeightMapSettings settings, 
-		Vector2 sampleCentre, bool useFalloff, Vector2 coord, bool debug=false) {
+		Vector2 sampleCentre, Vector2 coord, bool debug=false) {
+		bool useFalloff = settings.useFalloff;
 		// as we always use squares, use width for both dimentions!
 		float[,] values = Noise.GenerateNoiseMap (width, settings.noiseSettings, sampleCentre);
 		
@@ -66,6 +67,31 @@ public static class HeightMapGenerator {
 		if (debug) dumpData.ToFile();
 
 		return new HeightMap (values, minValue, maxValue);
+	}
+
+	public static HeightMap GenerateSeaMap(int width, HeightMapSettings settings,
+		Vector2 sampleCentre, float waveHeight = 0.02f, bool debug = false)
+	{
+		// as we always use squares, use width for both dimentions!
+		float[,] values = Noise.GenerateNoiseMap(width, settings.noiseSettings, sampleCentre);
+
+		DumpData dumpData = new DumpData();
+		if (debug)
+		{
+			dumpData.width = width;
+			dumpData.sampleCentre = sampleCentre;
+			dumpData.CaptureNoise(values);
+		}
+
+		for (int j = 0; j < width; j++)
+		{
+			for (int i = 0; i < width; i++)
+			{
+				values[j, i] *= waveHeight;
+			}
+		}
+
+		return new HeightMap(values, 0, waveHeight);
 	}
 
 }

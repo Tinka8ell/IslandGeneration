@@ -8,7 +8,7 @@ public class MapPreview : MonoBehaviour {
 	public MeshRenderer meshRenderer;
 	public FalloffGenerator falloffGenerator;
 
-	public enum DrawMode {NoiseMap, Mesh, FalloffMap, IslandMap, QuadLerpMap}; 
+	public enum DrawMode {NoiseMap, Mesh, FalloffMap, IslandMap, QuadLerpMap, SeaMap}; 
 	public DrawMode drawMode;
 
 	public MeshSettings meshSettings;
@@ -17,6 +17,7 @@ public class MapPreview : MonoBehaviour {
 	public FalloffSettings falloffSettings;
 
 	public Material terrainMaterial;
+	public Material seaMaterial;
 
 	public Vector2 coord = Vector2.zero;
 
@@ -31,8 +32,8 @@ public class MapPreview : MonoBehaviour {
 
 public void DrawMapInEditor() {
 		Islands.settings = falloffSettings.islandNoiseSettings; // make sure we are up to date
-		textureSettings.ApplyToMaterial (terrainMaterial);
-		textureSettings.UpdateMeshHeights (terrainMaterial, heightMapSettings.minHeight, heightMapSettings.maxHeight);
+		textureSettings.ApplyToMaterial(terrainMaterial);
+		textureSettings.UpdateMeshHeights(terrainMaterial, heightMapSettings.minHeight, heightMapSettings.maxHeight);
 		HeightMap heightMap = new HeightMap(new float[1,1], 0f, 1f);
 		Vector2 sampleCentre = coord * meshSettings.meshWorldSize / meshSettings.meshScale;
 
@@ -41,8 +42,11 @@ public void DrawMapInEditor() {
 			case DrawMode.NoiseMap:
 			case DrawMode.Mesh:
 				heightMap = HeightMapGenerator.GenerateHeightMap(
-					meshSettings.numVertsPerLine, heightMapSettings, sampleCentre,
-					heightMapSettings.useFalloff, coord);
+					meshSettings.numVertsPerLine, heightMapSettings, sampleCentre, coord);
+				break;
+			case DrawMode.SeaMap:
+				heightMap = HeightMapGenerator.GenerateSeaMap(
+					meshSettings.numVertsPerLine, heightMapSettings, sampleCentre, 0.2f);
 				break;
 			case DrawMode.IslandMap:
 			case DrawMode.FalloffMap:
@@ -56,11 +60,14 @@ public void DrawMapInEditor() {
 				DrawTexture (TextureGenerator.TextureFromHeightMap (heightMap));
 				break;
 			case DrawMode.Mesh:
-				DrawMesh (MeshGenerator.GenerateTerrainMesh (heightMap.values,meshSettings, editorPreviewLOD));
+				DrawMesh(MeshGenerator.GenerateTerrainMesh(heightMap.values, meshSettings, editorPreviewLOD));
+				break;
+			case DrawMode.SeaMap:
+				DrawMesh(MeshGenerator.GenerateSeaMesh(heightMap.values, meshSettings, editorPreviewLOD));
 				break;
 			case DrawMode.FalloffMap:
 				Anews anews = Islands.LocalNews(coord);
-				Debug.LogFormat("FalloffMap for {0} with anews: {1}", coord, anews);
+				// Debug.LogFormat("FalloffMap for {0} with anews: {1}", coord, anews);
 				if (!FalloffGenerator.falloffMaps.ContainsKey(anews.ToIndex()))
 					Debug.LogError("Missing falloutmap number: " + anews.ToIndex()
 						+ " of " + FalloffGenerator.falloffMaps.Keys.Count + " for anews: " + anews);

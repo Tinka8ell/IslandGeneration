@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System;
 
 public class TerrainGenerator : MonoBehaviour {
 
@@ -19,6 +20,7 @@ public class TerrainGenerator : MonoBehaviour {
 
 	public Transform viewer;
 	public Material mapMaterial;
+	public Material seaMaterial;
 
 	Vector2 viewerPosition;
 	Vector2 viewerPositionOld;
@@ -26,8 +28,11 @@ public class TerrainGenerator : MonoBehaviour {
 	float meshWorldSize;
 	int chunksVisibleInViewDst;
 
-    readonly Dictionary<Vector2, TerrainChunk> terrainChunkDictionary = new Dictionary<Vector2, TerrainChunk>();
-    readonly List<TerrainChunk> visibleTerrainChunks = new List<TerrainChunk>();
+	float waveHeight = 0.02f;
+
+	readonly Dictionary<Vector2, Chunk> terrainChunkDictionary = new Dictionary<Vector2, Chunk>();
+	readonly Dictionary<Vector2, Chunk> seaChunkDictionary = new Dictionary<Vector2, Chunk>();
+	readonly List<Chunk> visibleChunks = new List<Chunk>();
 
 	private void Awake()
 	{
@@ -39,6 +44,11 @@ public class TerrainGenerator : MonoBehaviour {
 			textureSettings = mapPreview.textureSettings;
 			falloffSettings = mapPreview.falloffSettings;
 			falloffGenerator = mapPreview.falloffGenerator;
+		}
+		if (textureSettings.layers.Length > 0)
+        {
+			waveHeight = textureSettings.layers[1].blendStrength + textureSettings.layers[1].startHeight; // get the height at which land colour starts
+			waveHeight *= heightMapSettings.heightMultiplier / 5;
 		}
 	}
 
@@ -66,50 +76,82 @@ public class TerrainGenerator : MonoBehaviour {
 		viewerPosition = new Vector2 (viewer.position.x, viewer.position.z); 
 
 		if ((viewerPositionOld - viewerPosition).sqrMagnitude > sqrViewerMoveThresholdForChunkUpdate) {
-			foreach (TerrainChunk chunk in visibleTerrainChunks)
+			foreach (Chunk chunk in visibleChunks)
 			{
 				chunk.UpdateCollisionMesh();
 			}
 			viewerPositionOld = viewerPosition;
-			UpdateVisibleChunks ();
-		}
-	}
-		
-	void UpdateVisibleChunks() {
-		HashSet<Vector2> alreadyUpdatedChunkCoords = new HashSet<Vector2> ();
-		for (int i = visibleTerrainChunks.Count-1; i >= 0; i--) {
-			alreadyUpdatedChunkCoords.Add (visibleTerrainChunks [i].coord);
-			visibleTerrainChunks [i].UpdateTerrainChunk ();
-		}
-			
-		int currentChunkCoordX = Mathf.RoundToInt (viewerPosition.x / meshWorldSize);
-		int currentChunkCoordY = Mathf.RoundToInt (viewerPosition.y / meshWorldSize);
-
-		for (int yOffset = -chunksVisibleInViewDst; yOffset <= chunksVisibleInViewDst; yOffset++) {
-			for (int xOffset = -chunksVisibleInViewDst; xOffset <= chunksVisibleInViewDst; xOffset++) {
-				Vector2 viewedChunkCoord = new Vector2 (currentChunkCoordX + xOffset, currentChunkCoordY + yOffset);
-				if (!alreadyUpdatedChunkCoords.Contains (viewedChunkCoord)) {
-					if (terrainChunkDictionary.ContainsKey (viewedChunkCoord)) {
-						terrainChunkDictionary [viewedChunkCoord].UpdateTerrainChunk ();
-					} else {
-						TerrainChunk newChunk = new TerrainChunk (
-							viewedChunkCoord, heightMapSettings, meshSettings, detailLevels, 
-							colliderLODIndex, transform, viewer, mapMaterial);
-						terrainChunkDictionary.Add (viewedChunkCoord, newChunk);
-						newChunk.OnVisibilityChanged += OnTerrainChunkVisibilityChanged;
-						newChunk.Load ();
-					}
-				}
-
-			}
+			UpdateVisibleChunks();
 		}
 	}
 
-	void OnTerrainChunkVisibilityChanged(TerrainChunk chunk, bool isVisible) {
+	private void UpdateVisibleChunks()
+    {
+        HashSet<Vector2> alreadyUpdatedTerrainChunkCoords = new HashSet<Vector2>();
+        HashSet<Vector2> alreadyUpdatedSeaChunkCoords = new HashSet<Vector2>();
+        for (int i = visibleChunks.Count - 1; i >= 0; i--)
+        {
+            Chunk visibleChunk = visibleChunks[i];
+            if (visibleChunk is TerrainChunk)
+            {
+                alreadyUpdatedTerrainChunkCoords.Add(visibleChunk.coord);
+            }
+            else
+            {
+                alreadyUpdatedSeaChunkCoords.Add(visibleChunk.coord);
+            }
+            visibleChunk.UpdateChunk();
+        }
+
+        int currentChunkCoordX = Mathf.RoundToInt(viewerPosition.x / meshWorldSize);
+        int currentChunkCoordY = Mathf.RoundToInt(viewerPosition.y / meshWorldSize);
+        FindNewlyVisible(currentChunkCoordX, currentChunkCoordY, terrainChunkDictionary, alreadyUpdatedTerrainChunkCoords, false);
+		FindNewlyVisible(currentChunkCoordX, currentChunkCoordY, seaChunkDictionary, alreadyUpdatedSeaChunkCoords, true);
+	}
+
+	private void FindNewlyVisible(int currentChunkCoordX, int currentChunkCoordY, Dictionary<Vector2, Chunk> chunkDictionary, HashSet<Vector2> alreadyUpdatedChunkCoords, bool isSeaChunk)
+    {
+        for (int yOffset = -chunksVisibleInViewDst; yOffset <= chunksVisibleInViewDst; yOffset++)
+        {
+            for (int xOffset = -chunksVisibleInViewDst; xOffset <= chunksVisibleInViewDst; xOffset++)
+            {
+                Vector2 viewedChunkCoord = new Vector2(currentChunkCoordX + xOffset, currentChunkCoordY + yOffset);
+                if (!alreadyUpdatedChunkCoords.Contains(viewedChunkCoord))
+                {
+                    if (chunkDictionary.ContainsKey(viewedChunkCoord))
+                    {
+                        chunkDictionary[viewedChunkCoord].UpdateChunk();
+                    }
+                    else
+                    {
+                        Chunk newChunk;
+                        if (isSeaChunk)
+                        {
+                            newChunk = new SeaChunk(
+                                viewedChunkCoord, heightMapSettings, meshSettings, detailLevels,
+                                colliderLODIndex, transform, viewer, seaMaterial, waveHeight) as Chunk;
+                        }
+                        else
+                        {
+                            newChunk = new TerrainChunk(
+                                viewedChunkCoord, heightMapSettings, meshSettings, detailLevels,
+                                colliderLODIndex, transform, viewer, mapMaterial) as Chunk;
+                        }
+                        chunkDictionary.Add(viewedChunkCoord, newChunk);
+                        newChunk.OnVisibilityChanged += OnChunkVisibilityChanged;
+                        newChunk.Load();
+                    }
+                }
+
+            }
+        }
+    }
+
+    void OnChunkVisibilityChanged(Chunk chunk, bool isVisible) {
 		if (isVisible) {
-			visibleTerrainChunks.Add (chunk);
+			visibleChunks.Add (chunk);
 		} else {
-			visibleTerrainChunks.Remove (chunk);
+			visibleChunks.Remove (chunk);
 		}
 	}
 

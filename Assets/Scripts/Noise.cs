@@ -89,7 +89,16 @@ public static class Noise {
 				}
 			}
 		}
-
+		/*
+		noiseMap = new float[size, size];
+		for (int y = 0; y < 10; y++)
+		{
+			for (int x = 0; x < 10; x++)
+			{
+				noiseMap[y, x] = .9f;
+			}
+		}
+		*/
 		return noiseMap;
 	}
 

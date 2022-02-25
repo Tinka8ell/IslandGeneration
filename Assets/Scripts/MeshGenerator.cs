@@ -3,8 +3,13 @@ using System.Collections;
 
 public static class MeshGenerator {
 
+	public static MeshData GenerateSeaMesh(float[,] heightMap, MeshSettings meshSettings, int levelOfDetail)
+	{
+		return GenerateTerrainMesh(heightMap, meshSettings, levelOfDetail);
+	}
 
-	public static MeshData GenerateTerrainMesh(float[,] heightMap, MeshSettings meshSettings, int levelOfDetail) {
+	public static MeshData GenerateTerrainMesh(float[,] heightMap, MeshSettings meshSettings, int levelOfDetail)
+	{
 		int skipIncrement = (levelOfDetail == 0)?1:levelOfDetail * 2;
 		int numVertsPerLine = meshSettings.numVertsPerLine;
 
@@ -49,9 +54,10 @@ public static class MeshGenerator {
 					// was: float height = heightMap[col, row]; // but this has swapped coordinates!
 					float height = heightMap[row, col];  // match top left to bottom right in height map
 
+					/* Removed for now as causes spikes at edges of LOD > 0 chunks!
 					if (isEdgeConnectionVertex) {
 						bool isVertical = col == 2 || col == numVertsPerLine - 3;
-						int dstToMainVertexA = ((isVertical)?row - 2:col-2) % skipIncrement;
+						int dstToMainVertexA = ((isVertical)?row - 2: col - 2) % skipIncrement;
 						int dstToMainVertexB = skipIncrement - dstToMainVertexA;
 						float dstPercentFromAToB = dstToMainVertexA / (float)skipIncrement;
 
@@ -60,6 +66,7 @@ public static class MeshGenerator {
 
 						height = heightMainVertexA * (1 - dstPercentFromAToB) + heightMainVertexB * dstPercentFromAToB;
 					}
+					*/
 
 					// Create the vertex using relative (x, y) => (x, y=h, z=y), but Unity uses left-handed axes!
 					// Shouldn't it be (x, h, -y)?
