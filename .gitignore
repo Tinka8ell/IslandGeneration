@@ -58,4 +58,12 @@ sysinfo.txt
 # Crashlytics generated file
 crashlytics-build.properties
 
+# Add-ins
+Assets/UMA/*
+Assets/UMA.meta
+Assets/StarterAssets/*
+Assets/StarterAssets.meta
+Assets/UMABackpacks_Sample/*
+Assets/UMABackpacks_Sample.meta
+
 GitUpload.bat
