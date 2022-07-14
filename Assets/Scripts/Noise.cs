@@ -7,7 +7,8 @@ public static class Noise {
 
 	public static float[,] GenerateNoiseMap(
 		int size, 
-		NoiseSettings settings, Vector2 sampleCentre,
+		NoiseSettings settings, 
+		Vector2 sampleCentre,
 		bool debug=false) {
 		float[,] noiseMap = new float[size,size];
 
