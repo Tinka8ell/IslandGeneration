@@ -51,12 +51,21 @@ public struct FalloffGenerator
 				noFalloff[i, j] = 1;
 			}
 		}
-		Debug.LogFormat("GenerateFalloffMaps, numberOfVertices: {0}, size: {1}, centreMapSize: {2}",
-			numberOfVertices, size, centreMapSize);
+		//Debug.LogFormat("GenerateFalloffMaps, numberOfVertices: {0}, size: {1}, centreMapSize: {2}",
+		//	numberOfVertices, size, centreMapSize);
 	}
 
-	internal static float[,] BuildFalloffMap(Vector2 coord)
+	private static CornorDirection[] cornorDirections = new CornorDirection[]{
+			CornorDirection.NW,
+			CornorDirection.NE,
+			CornorDirection.SW,
+			CornorDirection.SE,
+		};
+
+	public static float[,] BuildFalloffMap(Vector2 coord)
 	{
+		Debug.LogFormat("BuildFalloffMap, coord: {0}",
+			coord);
 		float[,] falloffMap = new float[size, size];
 
         /*
@@ -73,24 +82,23 @@ public struct FalloffGenerator
 		 * from the neighbouring cells.
 		 */
 
-        CornorDirection[] cornorDirections = new CornorDirection[]{
-			CornorDirection.NE,
-			CornorDirection.NW,
-			CornorDirection.SE,
-			CornorDirection.SW
-		};
-
-		for (int row = 1; row < 5; row++)
-        {
-			for (int col = 1; col < 5; col++)
+		for (int cellRow = 1; cellRow < 5; cellRow++)
+		//int cellRow = 1;
+		{
+			for (int cellCol = 1; cellCol < 5; cellCol++)
+			//int cellCol = 1;
 			{
-				Vector2 cell = new(coord.x - 1 + (col / 2), coord.y - 1 + (row / 2));
+				Vector2 cell = new(coord.x - 1 + (cellCol / 2), coord.y - 1 + (cellRow / 2));
 				Anews anews = Islands.LocalNews(cell);
-				int edgeNumber = (col % 2) + 2 * (row % 2);
+				int edgeNumber = (cellCol % 2) + 2 * (cellRow % 2);
 				CornorDirection cornorDirection = cornorDirections[edgeNumber];
-				int x = (col * centreMapSize) / 2 - size;
-				int y = (row * centreMapSize) / 2 - size;
-				CopyCorner(falloffMap, anews, cornorDirection, x, y);
+				Debug.LogFormat("BuildFalloffMap, loop[{0}, {1}], cell: {2}, cornorDirection: {3}",
+					cellCol, cellRow, cell, cornorDirection);
+				int col = (cellCol) / 2 * centreMapSize + 1 - centreMapSize;
+				if (cellCol % 2 > 0) col += centreMapSize / 2;
+				int row = (cellRow) / 2 * centreMapSize + 1 - centreMapSize;
+				if (cellRow % 2 > 0) row += centreMapSize / 2;
+				CopyCorner(falloffMap, anews, cornorDirection, col, row);
 			}
         }
 
@@ -99,23 +107,21 @@ public struct FalloffGenerator
 
     private static void CopyCorner(float[,] falloffMap, Anews anews, CornorDirection cornorDirection, int x, int y)
     {
-		//Debug.LogFormat("CopyCorner for anews: {0}, direction: {1}, ({2}, {3})",
-		//	anews, cornorDirection, x, y);
-		float[,] corner = GetCorner(anews, cornorDirection);
-        for (int j = 0; j < cornerSize; j++)
+        Debug.LogFormat("CopyCorner for anews: {0}, direction: {1}, ({2}, {3})",
+			anews, cornorDirection, x, y);
+        float[,] corner = GetCorner(anews, cornorDirection);
+		int minx = Mathf.Max(0, -x);
+		int maxx = Mathf.Min(cornerSize, size - x);
+		int miny = Mathf.Max(0, -y);
+		int maxy = Mathf.Min(cornerSize, size - y);
+		Debug.LogFormat("CopyCorner: minx: {0}, maxx: {1}, miny: {2}, maxy {3}",
+			minx, maxx, miny, maxy);
+		for (int j = miny; j < maxy; j++)
         {
-			for (int i = 0; i < cornerSize; i++)
+			for (int i = minx; i < maxx; i++)
 			{
-				int localx = x + i;
-				int localy = y + j;
-				if (localx >= 0 && 
-					localx < size &&
-					localy >= 0 &&
-					localy < size)
-                {
-					float value = corner[i, j];
-					falloffMap[localx, localy] = value;
-				}
+				float value = corner[i, j];
+				falloffMap[x + i, y + j] = value;
 			}
 		}
 	}
@@ -137,39 +143,39 @@ public struct FalloffGenerator
 		return new(values);
 	}
 
-	public static FalloffMap GenerateQuadFalloffMap(int size, Anews anews)
-	{
-		float[,] values = new float[size, size]; 
-		int cornerSize = (size + 1) / 2; // assumes size is odd!
-		int offset = size - cornerSize;
-		int col = 0;
-		int row = 0;
+	//public static FalloffMap GenerateQuadFalloffMap(int size, Anews anews)
+	//{
+	//	float[,] values = new float[size, size]; 
+	//	int cornerSize = (size + 1) / 2; // assumes size is odd!
+	//	int offset = size - cornerSize;
+	//	int col = 0;
+	//	int row = 0;
 
-		for (CornorDirection cd = 0; (int)cd < 4; cd++)
-		{
-			switch (cd)
-			{
-				case CornorDirection.NE:
-					col = offset;
-					row = 0;
-					break;
-				case CornorDirection.SE:
-					col = offset;
-					row = offset;
-					break;
-				case CornorDirection.SW:
-					col = 0;
-					row = offset;
-					break;
-				case CornorDirection.NW:
-					col = 0;
-					row = 0;
-					break;
-			}
-			QuadSlope(values, col, row, cornerSize, anews.GetCorners(cd));
-		}
-		return new FalloffMap(values);
-	}
+	//	for (CornorDirection cd = 0; (int)cd < 4; cd++)
+	//	{
+	//		switch (cd)
+	//		{
+	//			case CornorDirection.NE:
+	//				col = offset;
+	//				row = 0;
+	//				break;
+	//			case CornorDirection.SE:
+	//				col = offset;
+	//				row = offset;
+	//				break;
+	//			case CornorDirection.SW:
+	//				col = 0;
+	//				row = offset;
+	//				break;
+	//			case CornorDirection.NW:
+	//				col = 0;
+	//				row = 0;
+	//				break;
+	//		}
+	//		QuadSlope(values, col, row, cornerSize, anews.GetCorners(cd));
+	//	}
+	//	return new FalloffMap(values);
+	//}
 
 	private static void QuadSlope(
 		float[,] values, int col, int row, int size, float[] abcd)
@@ -178,6 +184,8 @@ public struct FalloffGenerator
 		float b = abcd[1];
 		float c = abcd[2];
 		float d = abcd[3];
+		Debug.LogFormat("QuadSlope: ({0}, {1}), size: {2}, abcd: {3}, {4}, {5}, {6})",
+			col, row, size, a, b, c, d);
 
 		for (int j = 0; j < size; j++) // rows
 		{

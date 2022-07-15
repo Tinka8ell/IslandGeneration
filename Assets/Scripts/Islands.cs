@@ -21,19 +21,34 @@ public static class Islands
 	/// <returns>int level between 0 and IslandNoiseSettings.levels</returns>
 	public static int GetLevel(Vector2 coord, bool debug = false)
 	{
-		System.Random prng = new System.Random(settings.seed);
-		float offsetX = prng.Next(-100000, 100000) + coord.x + settings.offset.x;
-		float offsetY = prng.Next(-100000, 100000) + coord.y + settings.offset.y;
-		float sampleX = offsetX / settings.scale;
-		float sampleY = offsetY / settings.scale;
-		float perlinValue = Mathf.PerlinNoise(sampleX, sampleY);
 		int level = 0;
-		if (perlinValue > settings.threshold)
+		if (settings.useFixed)
         {
-			level = Mathf.CeilToInt(Mathf.Lerp(0, settings.levels, (perlinValue - settings.threshold) / (1 - settings.threshold)));
-        }
-		if (debug) Debug.LogFormat("IsIsland for {0}, offset=({1}, {2}), sample=({3},{4}), perlin={5}, level={6}",
-			coord, offsetX, offsetY, sampleX, sampleY, perlinValue, level);
+			// for testing we use a known fixed set of values
+			if (Mathf.Abs(coord.x) <= settings.fixedIslands.GetLength(1) / 2 &&
+				Mathf.Abs(coord.y) <= settings.fixedIslands.GetLength(0) / 2)
+			{
+				int col = settings.fixedIslands.GetLength(1) / 2 + (int)coord.x;
+				int row = settings.fixedIslands.GetLength(0) / 2 - (int)coord.y;
+				//Debug.LogFormat("GetLevel: row = {0}, col = {1}", row, col);
+				level = settings.fixedIslands[row, col];
+			}
+		}
+		else
+        {
+			System.Random prng = new System.Random(settings.seed);
+			float offsetX = prng.Next(-100000, 100000) + coord.x + settings.offset.x;
+			float offsetY = prng.Next(-100000, 100000) + coord.y + settings.offset.y;
+			float sampleX = offsetX / settings.scale;
+			float sampleY = offsetY / settings.scale;
+			float perlinValue = Mathf.PerlinNoise(sampleX, sampleY);
+			if (perlinValue > settings.threshold)
+			{
+				level = Mathf.CeilToInt(Mathf.Lerp(0, settings.highestLevel, (perlinValue - settings.threshold) / (1 - settings.threshold)));
+			}
+			if (debug) Debug.LogFormat("IsIsland for {0}, offset=({1}, {2}), sample=({3},{4}), perlin={5}, level={6}",
+				coord, offsetX, offsetY, sampleX, sampleY, perlinValue, level);
+		}
 		return level;
 	}
 
@@ -90,6 +105,7 @@ public static class Islands
 			GetLevel(NextDoor(coord, Compass.S)),
 			GetLevel(NextDoor(coord, Compass.SE))
 			);
+		//Debug.LogFormat("LocalNews: coord = {0}, anews = {1}", coord, anews);
 		return anews;
 	}
 
@@ -213,7 +229,15 @@ public class IslandNoiseSettings {
 	public float threshold = .95f;
 
 	[Range(1, 7)]
-	public int levels = 1;
+	public int highestLevel = 1;
+
+	public bool useFixed = false;
+
+	public int[,] fixedIslands = new int[3, 3]{
+		{0, 0, 0},
+		{ 0, 1, 0},
+		{ 0, 0, 0}
+	};
 
 	public void ValidateValues()
 	{

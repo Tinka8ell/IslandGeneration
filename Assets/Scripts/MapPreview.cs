@@ -85,7 +85,7 @@ public void DrawMapInEditor() {
 								meshSettings.numVertsPerLine, 
 								falloffSettings.islandNoiseSettings, 
 								coord
-								), 0, Islands.settings.levels
+								), 0, Islands.settings.highestLevel
 							)
 						)
 					);
