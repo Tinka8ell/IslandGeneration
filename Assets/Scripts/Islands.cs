@@ -8,51 +8,67 @@ public static class Islands
 {
 	public static IslandNoiseSettings settings;
 
-	public static bool Check(Vector2 coord, bool debug = false)
+	/// <summary>
+	/// Get level of this coordinate.
+	/// </summary>
+	/// Use perlin noise to get a value for this coord.
+	/// If greater than IslandNoiseSettings.threshold
+	///    return value from 1 to IslandNoiseSettings.levels (island height)
+	/// else
+	///    return 0 (sea)
+	/// <param name="coord">Where to test</param>
+	/// <param name="debug">If to debug</param>
+	/// <returns>int level between 0 and IslandNoiseSettings.levels</returns>
+	public static int GetLevel(Vector2 coord, bool debug = false)
 	{
 		System.Random prng = new System.Random(settings.seed);
 		float offsetX = prng.Next(-100000, 100000) + coord.x + settings.offset.x;
 		float offsetY = prng.Next(-100000, 100000) + coord.y + settings.offset.y;
 		float sampleX = offsetX / settings.scale;
 		float sampleY = offsetY / settings.scale;
-		float perlinValue = Mathf.PerlinNoise(sampleX, sampleY) * 2 - 1;
-		if (debug) Debug.LogFormat("IsIsland for {0}, offset=({1}, {2}), sample=({3},{4}), perlin={5}",
-			coord, offsetX, offsetY, sampleX, sampleY, perlinValue);
-		return perlinValue > settings.threshold;
+		float perlinValue = Mathf.PerlinNoise(sampleX, sampleY);
+		int level = 0;
+		if (perlinValue > settings.threshold)
+        {
+			level = Mathf.CeilToInt(Mathf.Lerp(0, settings.levels, (perlinValue - settings.threshold) / (1 - settings.threshold)));
+        }
+		if (debug) Debug.LogFormat("IsIsland for {0}, offset=({1}, {2}), sample=({3},{4}), perlin={5}, level={6}",
+			coord, offsetX, offsetY, sampleX, sampleY, perlinValue, level);
+		return level;
 	}
 
-	public static Vector2 NextDoor(Vector2 coord, Anews.Compass compass)
+	public static Vector2 NextDoor(Vector2 coord, Compass compass)
     {
 		// North change away (+) and back (-1) - up and down
 		// East change right (+1) and left (-) - right and left
 		Vector2 change = Vector2.zero;
         switch (compass)
         {
-			case Anews.Compass.N:
+			case Compass.N:
 				change = Vector2.up;
 				break;
-			case Anews.Compass.NE:
+			case Compass.NE:
 				change = Vector2.up;
 				change += Vector2.right;
 				break;
-			case Anews.Compass.E:
+			case Compass.E:
 				change = Vector2.right;
 				break;
-			case Anews.Compass.SE:
+			case Compass.SE:
 				change = Vector2.down;
 				change += Vector2.right;
 				break;
-			case Anews.Compass.S:
+			case Compass.S:
 				change = Vector2.down;
 				break;
-			case Anews.Compass.SW:
+			case Compass.SW:
 				change = Vector2.down;
 				change += Vector2.left;
 				break;
-			case Anews.Compass.W:
+			case Compass.W:
 				change = Vector2.left;
 				break;
-			case Anews.Compass.NW:
+			case Compass.NW:
 				change = Vector2.up;
 				change += Vector2.left;
 				break;
@@ -63,27 +79,17 @@ public static class Islands
 
 	public static Anews LocalNews(Vector2 coord)
 	{
-		bool nw = false;
-		bool n = false;
-		bool ne = false;
-		bool w = false;
-		bool e = false;
-		bool sw = false;
-		bool s = false;
-		bool se = false;
-		bool isIsland = Check(coord);
-		if (isIsland)
-        {
-			nw = Check(NextDoor(coord, Anews.Compass.NW));
-			n = Check(NextDoor(coord, Anews.Compass.N));
-			ne = Check(NextDoor(coord, Anews.Compass.NE));
-			w = Check(NextDoor(coord, Anews.Compass.W));
-			e = Check(NextDoor(coord, Anews.Compass.E));
-			sw = Check(NextDoor(coord, Anews.Compass.SW));
-			s = Check(NextDoor(coord, Anews.Compass.S));
-			se = Check(NextDoor(coord, Anews.Compass.SE));
-		}
-		Anews anews = new Anews(nw, n, ne, w, isIsland, e, sw, s, se);
+		Anews anews = new(
+			GetLevel(NextDoor(coord, Compass.NW)),
+			GetLevel(NextDoor(coord, Compass.N)), 
+			GetLevel(NextDoor(coord, Compass.NE)), 
+			GetLevel(NextDoor(coord, Compass.W)),
+			GetLevel(coord),
+			GetLevel(NextDoor(coord, Compass.E)),
+			GetLevel(NextDoor(coord, Compass.SW)),
+			GetLevel(NextDoor(coord, Compass.S)),
+			GetLevel(NextDoor(coord, Compass.SE))
+			);
 		return anews;
 	}
 
@@ -101,8 +107,8 @@ public static class Islands
 		float[,] values = new float[width, width];
 		float half = Mathf.Floor(width / 2f);
 
-		float minR = width * width;
-		Vector2 nearest = centre;
+		//float minR = width * width;
+		//Vector2 nearest = centre;
 		// [0, 0] = tl => centre + half * UP + half * LEFT
 		Vector2 topLeft = new Vector2(centre.x + half, centre.y + half); 
 
@@ -113,17 +119,17 @@ public static class Islands
 			for (int i = 0; i < width; i++) // left to right (W to E) => +dx
 			{
 				Vector2 test = new Vector2(topLeft.x - i, topLeft.y - j);
-				values[j, i] = Check(test) ? 1f : 0f;
-				if (values[j, i] > 0) // found an island!
-				{
-					// Debug.LogFormat("Found island at: {0}", test);
-					float r = Vector2.Distance(test, centre);
-					if (r < minR)
-                    {
-						minR = r;
-						nearest = test;
-					}
-				}
+				values[j, i] = GetLevel(test);
+				//if (values[j, i] > 0) // found an island!
+				//{
+				//	// Debug.LogFormat("Found island at: {0}", test);
+				//	float r = Vector2.Distance(test, centre);
+				//	if (r < minR)
+    //                {
+				//		minR = r;
+				//		nearest = test;
+				//	}
+				//}
 			}
 		}
 		// Debug.LogFormat("Nearest island at: {0} and is {1} from {2}", nearest, minR, centre);
@@ -156,7 +162,7 @@ public static class Islands
 		int offset = 0;
 		int radius = 0;
 		int maxOffset = -1;
-		while (!Check(test)) // not found one yet
+		while (GetLevel(test) == 0) // not found one yet
 		{
 			offset++;
 			if (offset < maxOffset)
@@ -205,6 +211,9 @@ public class IslandNoiseSettings {
 
 	[Range(0, 1)]
 	public float threshold = .95f;
+
+	[Range(1, 7)]
+	public int levels = 1;
 
 	public void ValidateValues()
 	{

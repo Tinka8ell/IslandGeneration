@@ -5,33 +5,54 @@ public static class Noise {
 
 	public enum NormalizeMode {Local, Global};
 
+	private static Vector2[] octaveOffsets;
+	private static float[] amplitudes;
+	private static float[] frequencies;
+
+	private static float maxPossibleHeight;
+	private static bool initialised = false;
+
+	public static void InitialiseNoise(NoiseSettings settings)
+    {
+		if (!initialised)
+        {
+			initialised = true;
+			maxPossibleHeight = 0;
+			octaveOffsets = new Vector2[settings.octaves];
+			amplitudes = new float[settings.octaves];
+			frequencies = new float[settings.octaves];
+
+			System.Random prng = new System.Random(settings.seed);
+
+			float amplitude = 1;
+			float frequency = 1;
+
+			for (int o = 0; o < settings.octaves; o++)
+			{
+				float offsetX = prng.Next(-100000, 100000) + settings.offset.x;
+				float offsetY = prng.Next(-100000, 100000) - settings.offset.y;
+				octaveOffsets[o] = new Vector2(offsetX, offsetY);
+
+				maxPossibleHeight += amplitude;
+				amplitude *= settings.persistance;
+				frequency *= settings.lacunarity;
+				amplitudes[o] = amplitude;
+				frequencies[o] = frequency;
+			}
+		}
+	}
+
 	public static float[,] GenerateNoiseMap(
 		int size, 
 		NoiseSettings settings, 
 		Vector2 sampleCentre,
 		bool debug=false) {
+
 		float[,] noiseMap = new float[size,size];
 
+		InitialiseNoise(settings);
+
 		System.Random prng = new System.Random (settings.seed);
-		Vector2[] octaveOffsets = new Vector2[settings.octaves];
-		float[] amplitudes = new float[settings.octaves];
-		float[] frequencies = new float[settings.octaves];
-
-		float maxPossibleHeight = 0;
-		float amplitude = 1;
-		float frequency = 1;
-
-		for (int o = 0; o < settings.octaves; o++) {
-			float offsetX = prng.Next (-100000, 100000) + settings.offset.x + sampleCentre.x;
-			float offsetY = prng.Next (-100000, 100000) - settings.offset.y - sampleCentre.y;
-			octaveOffsets [o] = new Vector2 (offsetX, offsetY);
-
-			maxPossibleHeight += amplitude;
-			amplitude *= settings.persistance;
-			frequency *= settings.lacunarity;
-			amplitudes[o] = amplitude;
-			frequencies[o] = frequency;
-		}
 
 		float maxLocalNoiseHeight = float.MinValue;
 		float minLocalNoiseHeight = float.MaxValue;
@@ -44,10 +65,10 @@ public static class Noise {
 				float noiseHeight = 0;
 
 				for (int o = 0; o < settings.octaves; o++) {
-					float sampleX = (x-half + octaveOffsets[o].x) / settings.scale * frequencies[o];
-					float sampleY = (y-half + octaveOffsets[o].y) / settings.scale * frequencies[o];
+					float sampleX = (x-half + octaveOffsets[o].x + sampleCentre.x) / settings.scale * frequencies[o];
+					float sampleY = (y-half + octaveOffsets[o].y - sampleCentre.y) / settings.scale * frequencies[o];
 
-					float perlinValue = Mathf.PerlinNoise (sampleX, sampleY) * 2 - 1;
+					float perlinValue = Mathf.PerlinNoise (sampleX, sampleY) * 2 - 1; // convert 0<=?<=1 to -1<=?<=1
 					noiseHeight += perlinValue * amplitudes[o];
 				}
 
@@ -59,6 +80,9 @@ public static class Noise {
 				}
 
 				if (settings.normalizeMode == NormalizeMode.Global) {
+					// this calculation makes no sense!
+					// - maxPossibleHeight < noiseHeight < maxPossibleHeight
+					// so moving it up 1 before lerping it between 0 and 1 does not make sense at all
 					float normalizedHeight = (noiseHeight + 1) / (maxPossibleHeight / 0.9f);
 					noiseHeight = Mathf.Clamp (normalizedHeight, 0, int.MaxValue);
 				}
@@ -82,6 +106,7 @@ public static class Noise {
 			Debug.LogFormat("GenerateNoiseMap: edges for: {2}, {0}, {1}", tl, br, sampleCentre);
 		}
 
+		// this is not being used at present, but does not make sense if we are are tiling anyway
 		if (settings.normalizeMode == NormalizeMode.Local)
 		{
 			for (int y = 0; y < size; y++) {

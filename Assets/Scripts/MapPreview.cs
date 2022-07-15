@@ -68,9 +68,6 @@ public void DrawMapInEditor() {
 			case DrawMode.FalloffMap:
 				Anews anews = Islands.LocalNews(coord);
 				// Debug.LogFormat("FalloffMap for {0} with anews: {1}", coord, anews);
-				if (!FalloffGenerator.falloffMaps.ContainsKey(anews.ToIndex()))
-					Debug.LogError("Missing falloutmap number: " + anews.ToIndex()
-						+ " of " + FalloffGenerator.falloffMaps.Keys.Count + " for anews: " + anews);
 				float[,] falloffMap = FalloffGenerator.BuildFalloffMap(coord); 
 				DrawTexture(TextureGenerator.TextureFromHeightMap(new HeightMap(falloffMap, 0, 1)));
 				break;
@@ -88,7 +85,7 @@ public void DrawMapInEditor() {
 								meshSettings.numVertsPerLine, 
 								falloffSettings.islandNoiseSettings, 
 								coord
-								), 0, 1
+								), 0, Islands.settings.levels
 							)
 						)
 					);

@@ -24,11 +24,13 @@ public struct FalloffGenerator
 	private static int size;
 	private static FalloffSettings falloffSettings;
 
-	public static Dictionary<int, FalloffMap> falloffMaps = new Dictionary<int, FalloffMap>();
-//	public static FalloffMap emptyMap;
+	public static Dictionary<long, FalloffMap> falloffCorners = new();
     private static int centreMapSize;
+	private static int cornerSize;
 
-    public void GenerateFalloffMaps(int numberOfVertices, FalloffSettings fs)
+	public static float[,] noFalloff;
+
+	public void GenerateFalloffMaps(int numberOfVertices, FalloffSettings fs)
 	{
 		// update generate data
 		size = numberOfVertices;
@@ -37,112 +39,102 @@ public struct FalloffGenerator
 		// make sure Islands are up to date
 		Islands.settings = falloffSettings.islandNoiseSettings;
 
-		// build all the maps:
-		CreateCentreFalloffMaps();
-	}
-
-	private void CreateCentreFalloffMaps()
-    {
-		falloffMaps.Clear(); // remove old ones
+		falloffCorners.Clear(); // remove old ones
 		centreMapSize = size - 2; // set size of the centre maps 
-		
-		bool nw;
-		bool n;
-		bool ne;
-		bool w;
-		bool us;
-		bool e;
-		bool sw;
-		bool s;
-		bool se;
+		cornerSize = (centreMapSize + 1) / 2; // assumes size is odd!
 
-		for (int i = 1; i < 0b10_0000_0000; i++)
+		noFalloff = new float[size, size];
+		for (int j = 1; j < size; j++)
 		{
-			nw = (i & 0b1_0000_0000) != 0;
-			n = (i & 0b_1000_0000) != 0;
-			ne = (i & 0b_0100_0000) != 0;
-			w = (i & 0b_0010_0000) != 0;
-			us = (i & 0b_0001_0000) != 0;
-			e = (i & 0b_0000_1000) != 0;
-			sw = (i & 0b_0000_0100) != 0;
-			s = (i & 0b_0000_0010) != 0;
-			se = (i & 0b_0000_0001) != 0;
-			Anews anews = new Anews(nw, n, ne, w, us, e, se, s, sw);
-			int index = anews.ToIndex();
-			if (!falloffMaps.ContainsKey(index)) // haven't drawn it yet
+			for (int i = 1; i < size; i++)
 			{
-				// they are called centre falloff maps as they leave a boarder of one ...
-				falloffMaps.Add(index, GenerateQuadFalloffMap(centreMapSize, anews));
+				noFalloff[i, j] = 1;
 			}
 		}
-	}
-
-	internal static float[,] GetCentreFalloffMap(Anews anews)
-    {
-		int index = anews.ToIndex();
-		if (!falloffMaps.ContainsKey(index)) Debug.LogError("Not found falloutmap number: " + anews.ToIndex()
-			+ " of " + FalloffGenerator.falloffMaps.Keys.Count + " for anews: " + anews);
-		return falloffMaps[index].values;
+		Debug.LogFormat("GenerateFalloffMaps, numberOfVertices: {0}, size: {1}, centreMapSize: {2}",
+			numberOfVertices, size, centreMapSize);
 	}
 
 	internal static float[,] BuildFalloffMap(Vector2 coord)
 	{
 		float[,] falloffMap = new float[size, size];
 
-		// first fill centre
-		Anews anews = Islands.LocalNews(coord);
-		float[,] centreMap = GetCentreFalloffMap(anews);
-		for (int j = 0; j < centreMapSize; j++) // for each row ...
+        /*
+		 * Fill in these corners
+		 *   |  |  
+		 *  *|**|* 
+		 * --+--+--
+		 *  *|**|* 
+		 *  *|**|* 
+		 * --+--+--
+		 *  *|**|* 
+		 *   |  |  
+		 * Note that there is only one line / column 
+		 * from the neighbouring cells.
+		 */
+
+        CornorDirection[] cornorDirections = new CornorDirection[]{
+			CornorDirection.NE,
+			CornorDirection.NW,
+			CornorDirection.SE,
+			CornorDirection.SW
+		};
+
+		for (int row = 1; row < 5; row++)
         {
-			for (int i = 0; i < centreMapSize; i++) // for each row ...
+			for (int col = 1; col < 5; col++)
 			{
-			falloffMap[j + 1, i + 1] = centreMap[j, i];
+				Vector2 cell = new(coord.x - 1 + (col / 2), coord.y - 1 + (row / 2));
+				Anews anews = Islands.LocalNews(cell);
+				int edgeNumber = (col % 2) + 2 * (row % 2);
+				CornorDirection cornorDirection = cornorDirections[edgeNumber];
+				int x = (col * centreMapSize) / 2 - size;
+				int y = (row * centreMapSize) / 2 - size;
+				CopyCorner(falloffMap, anews, cornorDirection, x, y);
+			}
+        }
+
+		return falloffMap;
+	}
+
+    private static void CopyCorner(float[,] falloffMap, Anews anews, CornorDirection cornorDirection, int x, int y)
+    {
+		//Debug.LogFormat("CopyCorner for anews: {0}, direction: {1}, ({2}, {3})",
+		//	anews, cornorDirection, x, y);
+		float[,] corner = GetCorner(anews, cornorDirection);
+        for (int j = 0; j < cornerSize; j++)
+        {
+			for (int i = 0; i < cornerSize; i++)
+			{
+				int localx = x + i;
+				int localy = y + j;
+				if (localx >= 0 && 
+					localx < size &&
+					localy >= 0 &&
+					localy < size)
+                {
+					float value = corner[i, j];
+					falloffMap[localx, localy] = value;
+				}
 			}
 		}
+	}
 
-		// now work on each edge ...
-		int last = size - 1; // last column or row of the map 
+    private static float[,] GetCorner(Anews anews, CornorDirection cornorDirection)
+    {
+		FalloffMap corner;
+		if (!falloffCorners.TryGetValue(anews.ToIndex(), out corner)){
+			corner = GenerateCorner(anews, cornorDirection);
+			falloffCorners.Add(anews.ToIndex(), corner);
+        }
+		return corner.values;
+	}
 
-		// north edge
-		Vector2 nextDoor = Islands.NextDoor(coord, Anews.Compass.N);
-		centreMap = GetCentreFalloffMap(Islands.LocalNews(nextDoor));
-		for (int i = 0; i < centreMapSize; i++)
-		{
-			falloffMap[0, i + 1] = centreMap[centreMapSize - 1, i]; // our top border is north's bottom
-		}
-		
-		// south edge
-		nextDoor = Islands.NextDoor(coord, Anews.Compass.S);
-		centreMap = GetCentreFalloffMap(Islands.LocalNews(nextDoor));
-		for (int i = 0; i < centreMapSize; i++)
-		{
-			falloffMap[last, i + 1] = centreMap[0, i]; // our bottom border is south's top
-		}
-		
-		// east edge
-		nextDoor = Islands.NextDoor(coord, Anews.Compass.E);
-		centreMap = GetCentreFalloffMap(Islands.LocalNews(nextDoor));
-		for (int j = 0; j < centreMapSize; j++)
-		{
-			falloffMap[j + 1, last] = centreMap[j, 0]; // our right border is east's left
-		}
-		
-		// west edge
-		nextDoor = Islands.NextDoor(coord, Anews.Compass.W);
-		centreMap = GetCentreFalloffMap(Islands.LocalNews(nextDoor));
-		for (int j = 0; j < centreMapSize; j++)
-		{
-			falloffMap[j + 1, 0] = centreMap[j, centreMapSize - 1]; // our left border is east's right
-		}
-		
-		// finally fill in the corners ...
-		// cornor cheat - all corners will match exactly as our generator forces this
-		int centreLast = last - 1; // last column or row of the center map of the map
-		falloffMap[0, 0] = falloffMap[1, 1];
-		falloffMap[last, 0] = falloffMap[centreLast, 1];
-		falloffMap[0, last] = falloffMap[1, centreLast];
-		falloffMap[last, last] = falloffMap[centreLast, centreLast];
-		return falloffMap;
+    private static FalloffMap GenerateCorner(Anews anews, CornorDirection cornorDirection)
+    {
+		float[,] values = new float[cornerSize, cornerSize];
+		QuadSlope(values, 0, 0, cornerSize, anews.GetCorners(cornorDirection));
+		return new(values);
 	}
 
 	public static FalloffMap GenerateQuadFalloffMap(int size, Anews anews)

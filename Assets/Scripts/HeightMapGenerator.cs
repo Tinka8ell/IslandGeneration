@@ -10,7 +10,12 @@ public static class HeightMapGenerator {
 		bool useFalloff = settings.useFalloff;
 		// as we always use squares, use width for both dimentions!
 		float[,] values = Noise.GenerateNoiseMap (width, settings.noiseSettings, sampleCentre);
-		
+		float[,] falloff = FalloffGenerator.noFalloff;
+		if (useFalloff) // need to modify the map by falloff 
+		{
+			falloff = FalloffGenerator.BuildFalloffMap(coord);
+		}
+
 		DumpData dumpData = new DumpData();
 		if (debug)
         {
@@ -28,8 +33,15 @@ public static class HeightMapGenerator {
 
 		for (int j = 0; j < width; j++) {
 			for (int i = 0; i < width; i++) {
+				// first adjust by falloff if required
+				values[j, i] *= falloff[j, i]; // remove if 0, else augment if higher
 
-				values[j, i] *= heightCurve_threadsafe.Evaluate (values [j, i]) * settings.heightMultiplier;
+				// This does not make sense as we take the noise value 
+				// and multiply it by the animation curve value for itself
+				// and then finally the multiplier!
+				// should this have been a straight assignment?
+				values[j, i] *= heightCurve_threadsafe.Evaluate(values[j, i]);
+				values[j, i] *= settings.heightMultiplier;
 				if (values [j, i] > maxValue) {
 					maxValue = values [j, i];
 				}
@@ -39,30 +51,6 @@ public static class HeightMapGenerator {
 			}
 		}
 
-
-		if (useFalloff) // need to modify the map by falloff in range minValue to maxValue
-		{
-			float normRange = maxValue - minValue;
-			Anews anews = Islands.LocalNews(coord);
-			if (!FalloffGenerator.falloffMaps.ContainsKey(anews.ToIndex()))
-				Debug.LogError("Missing falloutmap number: " + anews.ToIndex()
-					+ " of " + FalloffGenerator.falloffMaps.Keys.Count + " for anews: " + anews);
-			float[,] falloff = FalloffGenerator.BuildFalloffMap(coord);
-			if (debug) dumpData.CaptureFalloffMap(falloff);
-			for (int j = 0; j < width; j++)
-			{
-				for (int i = 0; i < width; i++)
-				{
-					/*
-					float normValue = (values[j, i] - minValue) / normRange;
-					normValue = Mathf.Clamp01(normValue - falloff[j, i]);
-					values[j, i] = normValue * normRange + minValue;
-					*/
-					//values[j, i] = Mathf.Clamp(values[j, i] - normRange * falloff[j, i], minValue, maxValue);
-					values[j, i] -= settings.heightMultiplier * falloff[j, i];
-				}
-			}
-		}
 		if (debug) dumpData.CaptureValues(values);
 		if (debug) dumpData.ToFile();
 
