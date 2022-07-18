@@ -64,7 +64,7 @@ public struct FalloffGenerator
 
 	public static float[,] BuildFalloffMap(Vector2 coord)
 	{
-		Debug.LogWarningFormat("BuildFalloffMap, coord: {0} =====================================", coord);
+		//Debug.LogWarningFormat("BuildFalloffMap, coord: {0} =====================================", coord);
 		float[,] falloffMap = new float[size, size];
 
         /*
@@ -94,15 +94,17 @@ public struct FalloffGenerator
 
 				int edgeNumber = phaseX + 2 * phaseY;
 				CornorDirection cornorDirection = cornorDirections[edgeNumber];
+				int[] corners = anews.GetCorners(cornorDirection);
 
-                Debug.LogFormat("BuildFalloffMap, loop[{0}, {1}], cell: {2}, cornorDirection: {3}, offset: ({4}, {5}), phase: ({6}, {7}), anews: {8}",
-                    cellCol, cellRow, cell, cornorDirection, offsetX, offsetY, phaseX, phaseY, anews);
+				//Debug.LogFormat("BuildFalloffMap, loop[{0}, {1}], cell: {2}, direction: {3}, offset: ({4}, {5}), phase: ({6}, {7}), anews: {8}, corners: {9}/{10}/{11}/{12}",
+				//    cellCol, cellRow, cell, cornorDirection, 
+				//	offsetX, offsetY, phaseX, phaseY, 
+				//	anews, corners[0], corners[1], corners[2], corners[3]);
 
-                int col = offsetX * centreMapSize;
+				int col = offsetX * centreMapSize;
 				col += (phaseX == 0) ? 1 : cornerSize;
 				int row = offsetY * centreMapSize;
 				row += (phaseY == 0) ? 1 : cornerSize;
-				int[] corners = anews.GetCorners(cornorDirection);
 				CopyCorner(falloffMap, corners, col, row);
 			}
         }
@@ -117,8 +119,8 @@ public struct FalloffGenerator
 		int maxx = Mathf.Min(cornerSize, size - x);
 		int miny = Mathf.Max(0, -y);
 		int maxy = Mathf.Min(cornerSize, size - y);
-		Debug.LogFormat("CopyCorner for corners: {0}/{1}/{2}/{3}, ({4}, {5}), minx: {6}, maxx: {7}, miny: {8}, maxy {9}",
-			corners[0], corners[1], corners[2], corners[3], x, y, minx, maxx, miny, maxy);
+		//Debug.LogFormat("CopyCorner for corners: {0}/{1}/{2}/{3}, ({4}, {5}), minx: {6}, maxx: {7}, miny: {8}, maxy {9}",
+		//	corners[0], corners[1], corners[2], corners[3], x, y, minx, maxx, miny, maxy);
 		for (int i = minx; i < maxx; i++)
         {
 			for (int j = miny; j < maxy; j++)

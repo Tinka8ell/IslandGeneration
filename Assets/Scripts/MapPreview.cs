@@ -72,7 +72,7 @@ public void DrawMapInEditor() {
 				Anews anews = Islands.LocalNews(coord);
 				// Debug.LogFormat("FalloffMap for {0} with anews: {1}", coord, anews);
 				float[,] falloffMap = FalloffGenerator.BuildFalloffMap(coord);
-				float falloffRange = falloffSettings.islandNoiseSettings.highestLevel * 2f;
+				float falloffRange = falloffSettings.islandNoiseSettings.highestLevel * 4f;
 				DrawTexture(TextureGenerator.TextureFromHeightMap(new HeightMap(falloffMap, 0, falloffRange)));
 				break;
 			case DrawMode.Quadrant:
@@ -89,7 +89,7 @@ public void DrawMapInEditor() {
 				//	}
 				//	Debug.Log(line);
 				//}
-				float range = falloffSettings.islandNoiseSettings.highestLevel * 2f;
+				float range = falloffSettings.islandNoiseSettings.highestLevel * 4f;
 				DrawTexture(TextureGenerator.TextureFromHeightMap(new HeightMap(quadMap, 0, range)));
 				break;
 			case DrawMode.IslandMap:

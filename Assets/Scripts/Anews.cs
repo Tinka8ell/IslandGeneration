@@ -48,15 +48,15 @@ public class Anews
 
     public Anews(int nw, int n, int ne, int w, int c, int e, int sw, int s, int se)
     {
-        edges[(int)Compass.Centre] = c + c;
-        edges[(int)Compass.N] = n + c;
-        edges[(int)Compass.NE] = ne + c;
-        edges[(int)Compass.E] = e + c;
-        edges[(int)Compass.SE] = se + c;
-        edges[(int)Compass.S] = s + c;
-        edges[(int)Compass.SW] = sw + c;
-        edges[(int)Compass.W] = w + c;
-        edges[(int)Compass.NW] = nw + c;
+        edges[(int)Compass.Centre] = 4 * c;
+        edges[(int)Compass.N] = 2 * (n + c);
+        edges[(int)Compass.NE] = ne + c + n + e;
+        edges[(int)Compass.E] = 2 * (e + c);
+        edges[(int)Compass.SE] = se + c + s + e;
+        edges[(int)Compass.S] = 2 * (s + c);
+        edges[(int)Compass.SW] = sw + c + s + w;
+        edges[(int)Compass.W] = 2 * (w + c);
+        edges[(int)Compass.NW] = nw + c + n + w;
         index = 0;
         for(int i = 0; i < edges.Length; i++)
         {
