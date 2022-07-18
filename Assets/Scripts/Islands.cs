@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-
 public static class Islands
 {
 	public static IslandNoiseSettings settings;
@@ -28,10 +27,10 @@ public static class Islands
 			if (Mathf.Abs(coord.x) <= settings.fixedIslands.GetLength(1) / 2 &&
 				Mathf.Abs(coord.y) <= settings.fixedIslands.GetLength(0) / 2)
 			{
-				int col = settings.fixedIslands.GetLength(1) / 2 + (int)coord.x;
-				int row = settings.fixedIslands.GetLength(0) / 2 - (int)coord.y;
+				int col = settings.fixedIslands.GetLength(0) / 2 + (int)coord.x;
+				int row = settings.fixedIslands.GetLength(1) / 2 + (int)coord.y;
 				//Debug.LogFormat("GetLevel: row = {0}, col = {1}", row, col);
-				level = settings.fixedIslands[row, col];
+				level = settings.fixedIslands[col, row];
 			}
 		}
 		else
@@ -125,17 +124,17 @@ public static class Islands
 
 		//float minR = width * width;
 		//Vector2 nearest = centre;
-		// [0, 0] = tl => centre + half * UP + half * LEFT
-		Vector2 topLeft = new Vector2(centre.x + half, centre.y + half); 
+		// [0, 0] = bottom left => centre + half * DOWN + half * LEFT
+		Vector2 bottomLeft = new Vector2(centre.x - half, centre.y - half); 
 
 		// [j, i] => top left + Down * j + Right * i
 
-		for (int j = 0; j < width; j++) // top to bottom (N to S) => -dz
+		for (int j = 0; j < width; j++) // bottom to top (S to N) => +dz
 		{
 			for (int i = 0; i < width; i++) // left to right (W to E) => +dx
 			{
-				Vector2 test = new Vector2(topLeft.x - i, topLeft.y - j);
-				values[j, i] = GetLevel(test);
+				Vector2 test = new Vector2(bottomLeft.x + i, bottomLeft.y + j);
+				values[i, j] = GetLevel(test);
 				//if (values[j, i] > 0) // found an island!
 				//{
 				//	// Debug.LogFormat("Found island at: {0}", test);
@@ -220,6 +219,7 @@ public static class Islands
 
 [System.Serializable]
 public class IslandNoiseSettings {
+
 	public float scale = 50;
 
 	public int seed;
@@ -228,15 +228,16 @@ public class IslandNoiseSettings {
 	[Range(0, 1)]
 	public float threshold = .95f;
 
+	public static int maxLevel = 16; // so (highestLevel + 1) * 2 never excedes this
 	[Range(1, 7)]
 	public int highestLevel = 1;
 
 	public bool useFixed = false;
 
-	public int[,] fixedIslands = new int[3, 3]{
+	public int[,] fixedIslands = new int[3, 3]{ // note it is not layed out the way it looks!
 		{0, 0, 0},
-		{ 0, 1, 0},
-		{ 0, 0, 0}
+		{0, 1, 0},
+		{0, 0, 0}
 	};
 
 	public void ValidateValues()

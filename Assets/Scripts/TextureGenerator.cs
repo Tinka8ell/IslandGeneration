@@ -3,13 +3,24 @@ using System.Collections;
 
 public static class TextureGenerator {
 	public static Texture2D TextureFromHeightMap(HeightMap heightMap) {
-		int width = heightMap.values.GetLength (1);
-		int height = heightMap.values.GetLength (0);
+		// heightMap values are a float array where coord (x, y)
+		// is reperesented by heightMap.values[x, y]
+		int width = heightMap.values.GetLength (0);
+		int height = heightMap.values.GetLength (1);
 
 		Color[] colourMap = new Color[width * height];
 		for (int row = 0; row < height; row++) {
 			for (int col = 0; col < width; col++) {
-				colourMap [row * width + col] = Color.Lerp (Color.black, Color.white, Mathf.InverseLerp(heightMap.minValue,heightMap.maxValue,heightMap.values [row, col]));
+				colourMap [row * width + col] = 
+					Color.Lerp (
+						Color.black, 
+						Color.white, 
+						Mathf.InverseLerp(
+							heightMap.minValue,
+							heightMap.maxValue,
+							heightMap.values[width - 1 - col, height - 1 - row]
+							)
+						);
 			}
 		}
 

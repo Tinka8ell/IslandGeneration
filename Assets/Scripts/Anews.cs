@@ -48,7 +48,7 @@ public class Anews
 
     public Anews(int nw, int n, int ne, int w, int c, int e, int sw, int s, int se)
     {
-        edges[(int)Compass.Centre] = 2 * c;
+        edges[(int)Compass.Centre] = c + c;
         edges[(int)Compass.N] = n + c;
         edges[(int)Compass.NE] = ne + c;
         edges[(int)Compass.E] = e + c;
@@ -70,22 +70,22 @@ public class Anews
             ">(" + index + ")" + ShowEdges();
     }
 
-    public float [] GetCorners(CornorDirection cornorDirection)
+    public int [] GetCorners(CornorDirection cornorDirection)
     {
-        float[] values = { 0, 0, 0, 0 };
+        int[] values = { 0, 0, 0, 0 };
         switch (cornorDirection)
         {
             case CornorDirection.NW:
-                values = new float[] { edges[(int)Compass.NW], edges[(int)Compass.N], edges[(int)Compass.Centre], edges[(int)Compass.W] };
+                values = new int[] { edges[(int)Compass.NW], edges[(int)Compass.N], edges[(int)Compass.Centre], edges[(int)Compass.W] };
                 break;
             case CornorDirection.NE:
-                values = new float[] { edges[(int)Compass.N], edges[(int)Compass.NE], edges[(int)Compass.E], edges[(int)Compass.Centre] };
+                values = new int[] { edges[(int)Compass.N], edges[(int)Compass.NE], edges[(int)Compass.E], edges[(int)Compass.Centre] };
                 break;
             case CornorDirection.SE:
-                values = new float[] { edges[(int)Compass.Centre], edges[(int)Compass.E], edges[(int)Compass.SE], edges[(int)Compass.S] };
+                values = new int[] { edges[(int)Compass.Centre], edges[(int)Compass.E], edges[(int)Compass.SE], edges[(int)Compass.S] };
                 break;
             case CornorDirection.SW:
-                values = new float[] { edges[(int)Compass.W], edges[(int)Compass.Centre], edges[(int)Compass.S], edges[(int)Compass.SW] };
+                values = new int[] { edges[(int)Compass.W], edges[(int)Compass.Centre], edges[(int)Compass.S], edges[(int)Compass.SW] };
                 break;
         }
         return values;

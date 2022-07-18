@@ -51,21 +51,20 @@ public struct FalloffGenerator
 				noFalloff[i, j] = 1;
 			}
 		}
-		//Debug.LogFormat("GenerateFalloffMaps, numberOfVertices: {0}, size: {1}, centreMapSize: {2}",
-		//	numberOfVertices, size, centreMapSize);
-	}
+        //Debug.LogWarningFormat("GenerateFalloffMaps, numberOfVertices: {0}, size: {1}, centreMapSize: {2}",
+        //    numberOfVertices, size, centreMapSize);
+    }
 
 	private static CornorDirection[] cornorDirections = new CornorDirection[]{
-			CornorDirection.NW,
-			CornorDirection.NE,
 			CornorDirection.SW,
 			CornorDirection.SE,
+			CornorDirection.NW,
+			CornorDirection.NE,
 		};
 
 	public static float[,] BuildFalloffMap(Vector2 coord)
 	{
-		Debug.LogFormat("BuildFalloffMap, coord: {0}",
-			coord);
+		Debug.LogWarningFormat("BuildFalloffMap, coord: {0} =====================================", coord);
 		float[,] falloffMap = new float[size, size];
 
         /*
@@ -83,42 +82,46 @@ public struct FalloffGenerator
 		 */
 
 		for (int cellRow = 1; cellRow < 5; cellRow++)
-		//int cellRow = 1;
 		{
 			for (int cellCol = 1; cellCol < 5; cellCol++)
-			//int cellCol = 1;
 			{
-				Vector2 cell = new(coord.x - 1 + (cellCol / 2), coord.y - 1 + (cellRow / 2));
+				int offsetX = cellCol / 2 - 1;
+				int offsetY = cellRow / 2 - 1;
+				int phaseX = cellCol % 2;
+				int phaseY = cellRow % 2;
+				Vector2 cell = new(coord.x + offsetX, coord.y + offsetY);
 				Anews anews = Islands.LocalNews(cell);
-				int edgeNumber = (cellCol % 2) + 2 * (cellRow % 2);
+
+				int edgeNumber = phaseX + 2 * phaseY;
 				CornorDirection cornorDirection = cornorDirections[edgeNumber];
-				Debug.LogFormat("BuildFalloffMap, loop[{0}, {1}], cell: {2}, cornorDirection: {3}",
-					cellCol, cellRow, cell, cornorDirection);
-				int col = (cellCol) / 2 * centreMapSize + 1 - centreMapSize;
-				if (cellCol % 2 > 0) col += centreMapSize / 2;
-				int row = (cellRow) / 2 * centreMapSize + 1 - centreMapSize;
-				if (cellRow % 2 > 0) row += centreMapSize / 2;
-				CopyCorner(falloffMap, anews, cornorDirection, col, row);
+
+                Debug.LogFormat("BuildFalloffMap, loop[{0}, {1}], cell: {2}, cornorDirection: {3}, offset: ({4}, {5}), phase: ({6}, {7}), anews: {8}",
+                    cellCol, cellRow, cell, cornorDirection, offsetX, offsetY, phaseX, phaseY, anews);
+
+                int col = offsetX * centreMapSize;
+				col += (phaseX == 0) ? 1 : cornerSize;
+				int row = offsetY * centreMapSize;
+				row += (phaseY == 0) ? 1 : cornerSize;
+				int[] corners = anews.GetCorners(cornorDirection);
+				CopyCorner(falloffMap, corners, col, row);
 			}
         }
 
 		return falloffMap;
 	}
 
-    private static void CopyCorner(float[,] falloffMap, Anews anews, CornorDirection cornorDirection, int x, int y)
+    private static void CopyCorner(float[,] falloffMap, int[] corners, int x, int y)
     {
-        Debug.LogFormat("CopyCorner for anews: {0}, direction: {1}, ({2}, {3})",
-			anews, cornorDirection, x, y);
-        float[,] corner = GetCorner(anews, cornorDirection);
+        float[,] corner = GetCorner(corners);
 		int minx = Mathf.Max(0, -x);
 		int maxx = Mathf.Min(cornerSize, size - x);
 		int miny = Mathf.Max(0, -y);
 		int maxy = Mathf.Min(cornerSize, size - y);
-		Debug.LogFormat("CopyCorner: minx: {0}, maxx: {1}, miny: {2}, maxy {3}",
-			minx, maxx, miny, maxy);
-		for (int j = miny; j < maxy; j++)
+		Debug.LogFormat("CopyCorner for corners: {0}/{1}/{2}/{3}, ({4}, {5}), minx: {6}, maxx: {7}, miny: {8}, maxy {9}",
+			corners[0], corners[1], corners[2], corners[3], x, y, minx, maxx, miny, maxy);
+		for (int i = minx; i < maxx; i++)
         {
-			for (int i = minx; i < maxx; i++)
+			for (int j = miny; j < maxy; j++)
 			{
 				float value = corner[i, j];
 				falloffMap[x + i, y + j] = value;
@@ -126,75 +129,49 @@ public struct FalloffGenerator
 		}
 	}
 
-    private static float[,] GetCorner(Anews anews, CornorDirection cornorDirection)
+    public static float[,] GetCorner(int[] corners)
     {
+		long index = 0;
+        for (int i = 0; i < corners.Length; i++)
+        {
+			index = corners[i] + index * IslandNoiseSettings.maxLevel;
+        }
 		FalloffMap corner;
-		if (!falloffCorners.TryGetValue(anews.ToIndex(), out corner)){
-			corner = GenerateCorner(anews, cornorDirection);
-			falloffCorners.Add(anews.ToIndex(), corner);
+		bool found = falloffCorners.TryGetValue(index, out corner);
+		//Debug.LogFormat("getCorner for corners: {0}/{1}/{2}/{3}, index: {4}, found: {5}",
+		//	corners[0], corners[1], corners[2], corners[3], index, found);
+		if (!found){
+			corner = GenerateCorner(corners);
+			falloffCorners.Add(index, corner);
         }
 		return corner.values;
 	}
 
-    private static FalloffMap GenerateCorner(Anews anews, CornorDirection cornorDirection)
+    private static FalloffMap GenerateCorner(int[] corners)
     {
 		float[,] values = new float[cornerSize, cornerSize];
-		QuadSlope(values, 0, 0, cornerSize, anews.GetCorners(cornorDirection));
+		QuadSlope(values, cornerSize, corners);
 		return new(values);
 	}
 
-	//public static FalloffMap GenerateQuadFalloffMap(int size, Anews anews)
-	//{
-	//	float[,] values = new float[size, size]; 
-	//	int cornerSize = (size + 1) / 2; // assumes size is odd!
-	//	int offset = size - cornerSize;
-	//	int col = 0;
-	//	int row = 0;
-
-	//	for (CornorDirection cd = 0; (int)cd < 4; cd++)
-	//	{
-	//		switch (cd)
-	//		{
-	//			case CornorDirection.NE:
-	//				col = offset;
-	//				row = 0;
-	//				break;
-	//			case CornorDirection.SE:
-	//				col = offset;
-	//				row = offset;
-	//				break;
-	//			case CornorDirection.SW:
-	//				col = 0;
-	//				row = offset;
-	//				break;
-	//			case CornorDirection.NW:
-	//				col = 0;
-	//				row = 0;
-	//				break;
-	//		}
-	//		QuadSlope(values, col, row, cornerSize, anews.GetCorners(cd));
-	//	}
-	//	return new FalloffMap(values);
-	//}
-
 	private static void QuadSlope(
-		float[,] values, int col, int row, int size, float[] abcd)
+		float[,] values, int size, int[] abcd)
 	{
 		float a = abcd[0];
 		float b = abcd[1];
 		float c = abcd[2];
 		float d = abcd[3];
-		Debug.LogFormat("QuadSlope: ({0}, {1}), size: {2}, abcd: {3}, {4}, {5}, {6})",
-			col, row, size, a, b, c, d);
+		//Debug.LogFormat("QuadSlope: size: {0}, abcd: {1}, {2}, {3}, {4})",
+		//	size, a, b, c, d);
 
-		for (int j = 0; j < size; j++) // rows
+		for (int row = 0; row < size; row++) // rows
 		{
-			for (int i = 0; i < size; i++) // columns
+			for (int col = 0; col < size; col++) // columns
 			{
 				float value = QuadLerp(a, b, c, d,
-							i / (size - 1f), j / (size - 1f));
-				value = Evaluate(value, falloffSettings.a, falloffSettings.b);
-				values[row + j, col + i] = value;
+							col / (size - 1f), row / (size - 1f));
+				//value = Evaluate(value, falloffSettings.a, falloffSettings.b);
+				values[col, row] = value;
 			}
 		}
 	}
@@ -210,27 +187,27 @@ public struct FalloffGenerator
 		// Given a (u,v) coordinate that defines a 2D local position inside a planar quadrilateral, find the
 		// absolute 3D (x,y,z) coordinate at that location.
 		//
-		//  0 <----u----> 1
-		//  a ----------- b    0
+		//  0 <--- u ---> 1
+		//  a ----------- b    1
 		//  |             |   /|\
-		//  |             |    |
+		//  |             |    
 		//  |             |    v
-		//  |  *(u,v)     |    |
+		//  |  * (u, v)   |     
 		//  |             |   \|/
-		//  d------------ c    1
+		//  d------------ c    0
 		//
 		// a, b, c, and d are the vertices of the quadrilateral. They are assumed to exist in the
 		// same plane in 3D space, but this function will allow for some non-planar error.
 		//
 		// Variables u and v are the two-dimensional local coordinates inside the quadrilateral.
 		// To find a point that is inside the quadrilateral, both u and v must be between 0 and 1 inclusive.  
-		// For example, if you send this function u=0, v=0, then it will return coordinate "a".  
-		// Similarly, coordinate u=1, v=1 will return vector "c". Any values between 0 and 1
+		// For example, if you send this function u=0, v=0, then it will return coordinate "d".  
+		// Similarly, coordinate u=1, v=1 will return vector "b". Any values between 0 and 1
 		// will return a coordinate that is bi-linearly interpolated between the four vertices.		
 
-		float abu = Mathf.Lerp(a, b, u);
-		float dcu = Mathf.Lerp(d, c, u);
-		float result = Mathf.Lerp(abu, dcu, v);
+		float abCol = Mathf.Lerp(a, b, u);
+		float dcCol = Mathf.Lerp(d, c, u);
+		float result = Mathf.Lerp(dcCol, abCol, v);
 		return result;
 	}
 }

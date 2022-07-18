@@ -8,7 +8,7 @@ public class MapPreview : MonoBehaviour {
 	public MeshRenderer meshRenderer;
 	public FalloffGenerator falloffGenerator;
 
-	public enum DrawMode {NoiseMap, Mesh, FalloffMap, IslandMap, QuadLerpMap, SeaMap}; 
+	public enum DrawMode {NoiseMap, Mesh, Quadrant, FalloffMap, IslandMap, SeaMap, TestTexture, TestHeightMap }; 
 	public DrawMode drawMode;
 
 	public MeshSettings meshSettings;
@@ -20,6 +20,8 @@ public class MapPreview : MonoBehaviour {
 	public Material seaMaterial;
 
 	public Vector2 coord = Vector2.zero;
+
+	public CornorDirection cornorDirection = CornorDirection.NE;
 
 	public Islands.FindMode findMode;
 
@@ -49,6 +51,7 @@ public void DrawMapInEditor() {
 					meshSettings.numVertsPerLine, heightMapSettings, sampleCentre, 0.2f);
 				break;
 			case DrawMode.IslandMap:
+			case DrawMode.Quadrant:
 			case DrawMode.FalloffMap:
 				coord = Islands.FindAnIsland(coord, findMode);
 				break;
@@ -68,8 +71,26 @@ public void DrawMapInEditor() {
 			case DrawMode.FalloffMap:
 				Anews anews = Islands.LocalNews(coord);
 				// Debug.LogFormat("FalloffMap for {0} with anews: {1}", coord, anews);
-				float[,] falloffMap = FalloffGenerator.BuildFalloffMap(coord); 
-				DrawTexture(TextureGenerator.TextureFromHeightMap(new HeightMap(falloffMap, 0, 1)));
+				float[,] falloffMap = FalloffGenerator.BuildFalloffMap(coord);
+				float falloffRange = falloffSettings.islandNoiseSettings.highestLevel * 2f;
+				DrawTexture(TextureGenerator.TextureFromHeightMap(new HeightMap(falloffMap, 0, falloffRange)));
+				break;
+			case DrawMode.Quadrant:
+				Anews quadAnews = Islands.LocalNews(coord);
+				// Debug.LogFormat("Quadrant for {0} with anews: {1} and direction: {2}", coord, quadAnews, cornorDirection);
+				int[] corners = quadAnews.GetCorners(cornorDirection);
+				float[,] quadMap = FalloffGenerator.GetCorner(corners);
+				//for(int j = 0; j < quadMap.GetLength(0); j += 10)
+				//{
+				//	string line = "";
+				//	for (int i = 0; i < quadMap.GetLength(1); i += 10)
+				//	{
+				//		line += " " + quadMap[j, i].ToString("F2");
+				//	}
+				//	Debug.Log(line);
+				//}
+				float range = falloffSettings.islandNoiseSettings.highestLevel * 2f;
+				DrawTexture(TextureGenerator.TextureFromHeightMap(new HeightMap(quadMap, 0, range)));
 				break;
 			case DrawMode.IslandMap:
 				/*
@@ -90,20 +111,47 @@ public void DrawMapInEditor() {
 						)
 					);
 				break;
-			case DrawMode.QuadLerpMap:
+			case DrawMode.TestTexture:
+				HeightMap testMap = GetTestMap(meshSettings.numVertsPerLine);
 				DrawTexture(
-					TextureGenerator.TextureFromHeightMap(
-						new HeightMap(
-							new QuadLerpMap(meshSettings.numVertsPerLine, falloffSettings, true, false, false, true).values, 0, 1
-							)
-						)
-					);
+					TextureGenerator.TextureFromHeightMap(testMap));
+				break;
+			case DrawMode.TestHeightMap:
+				HeightMap testHeightMap = GetTestMap(meshSettings.numVertsPerLine);
+				DrawMesh(MeshGenerator.GenerateSeaMesh(testHeightMap.values, meshSettings, editorPreviewLOD));
 				break;
 		}
 	}
 
-
-
+	private static HeightMap GetTestMap(int numVertsPerLine)
+    {
+		// create an arrow pointing SW
+		int size = numVertsPerLine;
+		var testMap = new float[size, size];
+		int thickness = size / 10;
+		for (int offset = 0; offset < thickness; offset++)
+		{
+			for (int index = 0; index < size; index++)
+			{
+				// bottom line
+				testMap[index, offset] = 1f;
+				// left line
+				testMap[offset, index] = 2f;
+			}
+		}
+		for (int offset = 0; offset < thickness / 2; offset++)
+		{
+			for (int index = 0; index < size - offset; index++)
+			{
+				// diagonal
+				testMap[index + offset, index] = 3f;
+				testMap[index, index + offset] = 3f;
+			}
+		}
+		return new HeightMap(
+			testMap, 0f, 3f
+			); ;
+    }
 
 
 	public void DrawTexture(Texture2D texture) {

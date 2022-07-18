@@ -15,6 +15,8 @@ public static class MeshGenerator {
 
 		// Assuming relative to centre, top left is half width to left (-1) and half width forward (+1)
 		Vector2 topLeft = new Vector2 (-1, +1) * meshSettings.meshWorldSize / 2f;
+		// Assuming relative to centre, bottom left is half width to left (-1) and half width backward (-1)
+		Vector2 bottomLeft = new Vector2(-1, -1) * meshSettings.meshWorldSize / 2f;
 
 		MeshData meshData = new MeshData (numVertsPerLine, skipIncrement, meshSettings.useFlatShading);
 
@@ -50,7 +52,7 @@ public static class MeshGenerator {
 					// calc relative position as %
 					Vector2 percent = new Vector2(col - 1, row - 1) / (numVertsPerLine - 3);
 					// calc offset poision from top left
-					Vector2 vertexPosition2D = topLeft + new Vector2(percent.x,-percent.y) * meshSettings.meshWorldSize;
+					Vector2 vertexPosition2D = bottomLeft + new Vector2(percent.x, percent.y) * meshSettings.meshWorldSize;
 					// was: float height = heightMap[col, row]; // but this has swapped coordinates!
 					float height = heightMap[row, col];  // match top left to bottom right in height map
 
@@ -81,8 +83,10 @@ public static class MeshGenerator {
 						int b = vertexIndicesMap [col + currentIncrement, row];
 						int c = vertexIndicesMap [col, row + currentIncrement];
 						int d = vertexIndicesMap [col + currentIncrement, row + currentIncrement];
-						meshData.AddTriangle (a, d, c);
-						meshData.AddTriangle (d, a, b);
+						//meshData.AddTriangle(a, d, c);
+						//meshData.AddTriangle(d, a, b);
+						meshData.AddTriangle(a, c, d);
+						meshData.AddTriangle(d, b, a);
 					}
 				}
 			}
