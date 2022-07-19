@@ -30,14 +30,17 @@ public class MapPreview : MonoBehaviour {
 	public bool autoUpdate;
 
 	int oldNumVertsPerLine;
-	FalloffSettings oldFalloffSettings; 
+	FalloffSettings oldFalloffSettings;
 
-public void DrawMapInEditor() {
+	public void DrawMapInEditor()
+	{
 		Islands.settings = falloffSettings.islandNoiseSettings; // make sure we are up to date
 		textureSettings.ApplyToMaterial(terrainMaterial);
 		textureSettings.UpdateMeshHeights(terrainMaterial, heightMapSettings.minHeight, heightMapSettings.maxHeight);
-		HeightMap heightMap = new HeightMap(new float[1,1], 0f, 1f);
+		HeightMap heightMap = GetTestMap(meshSettings.numVertsPerLine);
 		Vector2 sampleCentre = coord * meshSettings.meshWorldSize / meshSettings.meshScale;
+
+		float falloffRange = falloffSettings.islandNoiseSettings.highestLevel * 16f;
 
 		switch (drawMode)
 		{
@@ -71,15 +74,14 @@ public void DrawMapInEditor() {
 			case DrawMode.FalloffMap:
 				Anews anews = Islands.LocalNews(coord);
 				// Debug.LogFormat("FalloffMap for {0} with anews: {1}", coord, anews);
-				float[,] falloffMap = FalloffGenerator.BuildFalloffMap(coord);
-				float falloffRange = falloffSettings.islandNoiseSettings.highestLevel * 4f;
+				float[,] falloffMap = FalloffGenerator.BuildFalloffMap(coord, meshSettings.numVertsPerLine);
 				DrawTexture(TextureGenerator.TextureFromHeightMap(new HeightMap(falloffMap, 0, falloffRange)));
 				break;
 			case DrawMode.Quadrant:
 				Anews quadAnews = Islands.LocalNews(coord);
 				// Debug.LogFormat("Quadrant for {0} with anews: {1} and direction: {2}", coord, quadAnews, cornorDirection);
-				int[] corners = quadAnews.GetCorners(cornorDirection);
-				float[,] quadMap = FalloffGenerator.GetCorner(corners);
+				Corner corner = quadAnews.GetCorner(cornorDirection);
+				float[,] quadMap = FalloffGenerator.GetCorners(corner, meshSettings.numVertsPerLine);
 				//for(int j = 0; j < quadMap.GetLength(0); j += 10)
 				//{
 				//	string line = "";
@@ -89,8 +91,7 @@ public void DrawMapInEditor() {
 				//	}
 				//	Debug.Log(line);
 				//}
-				float range = falloffSettings.islandNoiseSettings.highestLevel * 4f;
-				DrawTexture(TextureGenerator.TextureFromHeightMap(new HeightMap(quadMap, 0, range)));
+				DrawTexture(TextureGenerator.TextureFromHeightMap(new HeightMap(quadMap, 0, falloffRange)));
 				break;
 			case DrawMode.IslandMap:
 				/*

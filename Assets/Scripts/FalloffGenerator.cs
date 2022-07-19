@@ -24,7 +24,7 @@ public struct FalloffGenerator
 	private static int size;
 	private static FalloffSettings falloffSettings;
 
-	public static Dictionary<long, FalloffMap> falloffCorners = new();
+	public static Dictionary<ulong, FalloffMap> falloffCorners = new();
     private static int centreMapSize;
 	private static int cornerSize;
 
@@ -62,10 +62,12 @@ public struct FalloffGenerator
 			CornorDirection.NE,
 		};
 
-	public static float[,] BuildFalloffMap(Vector2 coord)
+	public static float[,] BuildFalloffMap(Vector2 coord, int size)
 	{
 		//Debug.LogWarningFormat("BuildFalloffMap, coord: {0} =====================================", coord);
 		float[,] falloffMap = new float[size, size];
+		int centreSize = size - 2;
+		int cornerSize = (centreSize + 1) / 2;
 
         /*
 		 * Fill in these corners
@@ -94,27 +96,27 @@ public struct FalloffGenerator
 
 				int edgeNumber = phaseX + 2 * phaseY;
 				CornorDirection cornorDirection = cornorDirections[edgeNumber];
-				int[] corners = anews.GetCorners(cornorDirection);
+				Corner corner = anews.GetCorner(cornorDirection);
 
 				//Debug.LogFormat("BuildFalloffMap, loop[{0}, {1}], cell: {2}, direction: {3}, offset: ({4}, {5}), phase: ({6}, {7}), anews: {8}, corners: {9}/{10}/{11}/{12}",
 				//    cellCol, cellRow, cell, cornorDirection, 
 				//	offsetX, offsetY, phaseX, phaseY, 
 				//	anews, corners[0], corners[1], corners[2], corners[3]);
 
-				int col = offsetX * centreMapSize;
+				int col = offsetX * centreSize;
 				col += (phaseX == 0) ? 1 : cornerSize;
-				int row = offsetY * centreMapSize;
+				int row = offsetY * centreSize;
 				row += (phaseY == 0) ? 1 : cornerSize;
-				CopyCorner(falloffMap, corners, col, row);
+				CopyCorner(falloffMap, corner, col, row, cornerSize);
 			}
         }
 
 		return falloffMap;
 	}
 
-    private static void CopyCorner(float[,] falloffMap, int[] corners, int x, int y)
+    private static void CopyCorner(float[,] falloffMap, Corner corner, int x, int y, int cornerSize)
     {
-        float[,] corner = GetCorner(corners);
+        float[,] corners = GetCorners(corner, cornerSize);
 		int minx = Mathf.Max(0, -x);
 		int maxx = Mathf.Min(cornerSize, size - x);
 		int miny = Mathf.Max(0, -y);
@@ -125,39 +127,35 @@ public struct FalloffGenerator
         {
 			for (int j = miny; j < maxy; j++)
 			{
-				float value = corner[i, j];
+				float value = corners[i, j];
 				falloffMap[x + i, y + j] = value;
 			}
 		}
 	}
 
-    public static float[,] GetCorner(int[] corners)
+    public static float[,] GetCorners(Corner corner, int cornerSize)
     {
-		long index = 0;
-        for (int i = 0; i < corners.Length; i++)
-        {
-			index = corners[i] + index * IslandNoiseSettings.maxLevel;
-        }
-		FalloffMap corner;
-		bool found = falloffCorners.TryGetValue(index, out corner);
+		ulong index = corner.index;
+		FalloffMap quadrant;
+		bool found = falloffCorners.TryGetValue(index, out quadrant);
 		//Debug.LogFormat("getCorner for corners: {0}/{1}/{2}/{3}, index: {4}, found: {5}",
 		//	corners[0], corners[1], corners[2], corners[3], index, found);
 		if (!found){
-			corner = GenerateCorner(corners);
-			falloffCorners.Add(index, corner);
+			quadrant = GenerateCorner(corner, cornerSize);
+			falloffCorners.Add(index, quadrant);
         }
-		return corner.values;
+		return quadrant.values;
 	}
 
-    private static FalloffMap GenerateCorner(int[] corners)
-    {
+    private static FalloffMap GenerateCorner(Corner corner, int cornerSize)
+	{
 		float[,] values = new float[cornerSize, cornerSize];
-		QuadSlope(values, cornerSize, corners);
+		QuadSlope(values, cornerSize, corner.corners);
 		return new(values);
 	}
 
 	private static void QuadSlope(
-		float[,] values, int size, int[] abcd)
+		float[,] values, int size, float[] abcd)
 	{
 		float a = abcd[0];
 		float b = abcd[1];

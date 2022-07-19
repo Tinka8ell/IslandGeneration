@@ -7,54 +7,71 @@ public static class HeightMapGenerator {
 
 	public static HeightMap GenerateHeightMap(int width, HeightMapSettings settings, 
 		Vector2 sampleCentre, Vector2 coord, bool debug=false) {
-		bool useFalloff = settings.useFalloff;
 		// as we always use squares, use width for both dimentions!
 		float[,] values = Noise.GenerateNoiseMap (width, settings.noiseSettings, sampleCentre);
-		float[,] falloff = FalloffGenerator.noFalloff;
-		if (useFalloff) // need to modify the map by falloff 
+
+		//float[,] falloff = FalloffGenerator.noFalloff;
+		float[,] falloff = new float[width, width];
+		// generated noise map is from 0 to 1;
+		float minValue = 0;
+		float maxValue = 1f;
+
+		if (settings.useFalloff) // need to modify the map by falloff 
 		{
-			falloff = FalloffGenerator.BuildFalloffMap(coord);
+			falloff = FalloffGenerator.BuildFalloffMap(coord, width);
+			// extend by the falloff range
+			maxValue += IslandNoiseSettings.maxLevel;
 		}
 
-		DumpData dumpData = new DumpData();
-		if (debug)
-        {
-			dumpData.width = width;
-			dumpData.sampleCentre = sampleCentre;
-			dumpData.useFalloff = useFalloff;
-			dumpData.coord = coord;
-			dumpData.CaptureNoise(values);
-		}
+		Debug.LogFormat("GenerateHeightMap({0}, settings, {1}, {2}), falloff width: {3}, maxValue: {4}",
+			width, sampleCentre, coord, falloff.GetLength(0), maxValue);
+
+		//DumpData dumpData = new DumpData();
+		//if (debug)
+		//      {
+		//	dumpData.width = width;
+		//	dumpData.sampleCentre = sampleCentre;
+		//	dumpData.useFalloff = useFalloff;
+		//	dumpData.coord = coord;
+		//	dumpData.CaptureNoise(values);
+		//}
 
 		AnimationCurve heightCurve_threadsafe = new AnimationCurve (settings.heightCurve.keys);
 
-		float minValue = float.MaxValue;
-		float maxValue = float.MinValue;
+		float minV = float.MaxValue;
+		float maxV = float.MinValue;
 
 		for (int j = 0; j < width; j++) {
 			for (int i = 0; i < width; i++) {
 				// first adjust by falloff if required
-				values[j, i] *= falloff[j, i]; // remove if 0, else augment if higher
+				values[i, j] += falloff[i, j]; // remove if 0, else augment if higher
 
-				// This does not make sense as we take the noise value 
-				// and multiply it by the animation curve value for itself
-				// and then finally the multiplier!
-				// should this have been a straight assignment?
-				values[j, i] *= heightCurve_threadsafe.Evaluate(values[j, i]);
-				values[j, i] *= settings.heightMultiplier;
-				if (values [j, i] > maxValue) {
-					maxValue = values [j, i];
-				}
-				if (values [j, i] < minValue) {
-					minValue = values [j, i];
-				}
-			}
+				//// This does not make sense as we take the noise value 
+				//// and multiply it by the animation curve value for itself
+				//// and then finally the multiplier!
+				//// should this have been a straight assignment?
+				//values[j, i] *= heightCurve_threadsafe.Evaluate(values[j, i]);
+
+				values[i, j] *= settings.heightMultiplier;
+
+                if (values[i, j] > maxV)
+                {
+                    maxV = values[i, j];
+                }
+                if (values[i, j] < minV)
+                {
+                    minV = values[i, j];
+                }
+            }
 		}
 
-		if (debug) dumpData.CaptureValues(values);
-		if (debug) dumpData.ToFile();
+		//if (debug) dumpData.CaptureValues(values);
+		//if (debug) dumpData.ToFile();
 
-		return new HeightMap (values, minValue, maxValue);
+		Debug.LogFormat("GenerateHeightMap: minValue = {0}, maxValue = {1}, minV = {2}, maxV = {3}",
+			minValue * settings.heightMultiplier, maxValue * settings.heightMultiplier, minV, maxV);
+
+		return new HeightMap (values, 1f * minValue * settings.heightMultiplier, 1f * maxValue * settings.heightMultiplier);
 	}
 
 	public static HeightMap GenerateSeaMap(int width, HeightMapSettings settings,

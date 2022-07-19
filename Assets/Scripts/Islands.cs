@@ -228,8 +228,9 @@ public class IslandNoiseSettings {
 	[Range(0, 1)]
 	public float threshold = .95f;
 
-	public static int maxLevel = 16; // so (highestLevel + 1) * 2 never excedes this
-	[Range(1, 7)]
+	public static int levels = 3; // highest possible level
+	public static int maxLevel = (levels + 1) * 4; 
+	[Range(1, 3)]
 	public int highestLevel = 1;
 
 	public bool useFixed = false;

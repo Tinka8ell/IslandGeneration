@@ -106,7 +106,7 @@ public class TerrainGenerator : MonoBehaviour {
         int currentChunkCoordX = Mathf.RoundToInt(viewerPosition.x / meshWorldSize);
         int currentChunkCoordY = Mathf.RoundToInt(viewerPosition.y / meshWorldSize);
         FindNewlyVisible(currentChunkCoordX, currentChunkCoordY, terrainChunkDictionary, alreadyUpdatedTerrainChunkCoords, false);
-		FindNewlyVisible(currentChunkCoordX, currentChunkCoordY, seaChunkDictionary, alreadyUpdatedSeaChunkCoords, true);
+		// FindNewlyVisible(currentChunkCoordX, currentChunkCoordY, seaChunkDictionary, alreadyUpdatedSeaChunkCoords, true);
 	}
 
 	private void FindNewlyVisible(int currentChunkCoordX, int currentChunkCoordY, Dictionary<Vector2, Chunk> chunkDictionary, HashSet<Vector2> alreadyUpdatedChunkCoords, bool isSeaChunk)

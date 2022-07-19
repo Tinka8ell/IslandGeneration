@@ -38,23 +38,23 @@ public static class MeshGenerator {
 			}
 		}
 
-		for (int row = 0; row < numVertsPerLine; row ++) {
-			for (int col = 0; col < numVertsPerLine; col++) {
-				bool isSkippedVertex = col > 2 && col < numVertsPerLine - 3 && row > 2 && row < numVertsPerLine - 3 && ((col - 2) % skipIncrement != 0 || (row - 2) % skipIncrement != 0);
+		for (int x = 0; x < numVertsPerLine; x ++) {
+			for (int y = 0; y < numVertsPerLine; y++) {
+				bool isSkippedVertex = y > 2 && y < numVertsPerLine - 3 && x > 2 && x < numVertsPerLine - 3 && ((y - 2) % skipIncrement != 0 || (x - 2) % skipIncrement != 0);
 
 				if (!isSkippedVertex) {
-					bool isOutOfMeshVertex = row == 0 || row == numVertsPerLine - 1 || col == 0 || col == numVertsPerLine - 1;
-					bool isMeshEdgeVertex = (row == 1 || row == numVertsPerLine - 2 || col == 1 || col == numVertsPerLine - 2) && !isOutOfMeshVertex;
-					bool isMainVertex = (col - 2) % skipIncrement == 0 && (row - 2) % skipIncrement == 0 && !isOutOfMeshVertex && !isMeshEdgeVertex;
-					bool isEdgeConnectionVertex = (row == 2 || row == numVertsPerLine - 3 || col == 2 || col == numVertsPerLine - 3) && !isOutOfMeshVertex && !isMeshEdgeVertex && !isMainVertex;
+					bool isOutOfMeshVertex = x == 0 || x == numVertsPerLine - 1 || y == 0 || y == numVertsPerLine - 1;
+					bool isMeshEdgeVertex = (x == 1 || x == numVertsPerLine - 2 || y == 1 || y == numVertsPerLine - 2) && !isOutOfMeshVertex;
+					bool isMainVertex = (y - 2) % skipIncrement == 0 && (x - 2) % skipIncrement == 0 && !isOutOfMeshVertex && !isMeshEdgeVertex;
+					bool isEdgeConnectionVertex = (x == 2 || x == numVertsPerLine - 3 || y == 2 || y == numVertsPerLine - 3) && !isOutOfMeshVertex && !isMeshEdgeVertex && !isMainVertex;
 
-					int vertexIndex = vertexIndicesMap [col, row];
+					int vertexIndex = vertexIndicesMap [x, y]; // should this be y, x?
 					// calc relative position as %
-					Vector2 percent = new Vector2(col - 1, row - 1) / (numVertsPerLine - 3);
+					Vector2 percent = new Vector2(x - 1, y - 1) / (numVertsPerLine - 3); // equallt, should these be reversed?
 					// calc offset poision from top left
 					Vector2 vertexPosition2D = bottomLeft + new Vector2(percent.x, percent.y) * meshSettings.meshWorldSize;
 					// was: float height = heightMap[col, row]; // but this has swapped coordinates!
-					float height = heightMap[row, col];  // match top left to bottom right in height map
+					float height = heightMap[x, y];  // match top left to bottom right in height map
 
 					/* Removed for now as causes spikes at edges of LOD > 0 chunks!
 					if (isEdgeConnectionVertex) {
@@ -74,15 +74,15 @@ public static class MeshGenerator {
 					// Shouldn't it be (x, h, -y)?
 					meshData.AddVertex (new Vector3(vertexPosition2D.x, height, vertexPosition2D.y), percent, vertexIndex);
 
-					bool createTriangle = col < numVertsPerLine - 1 && row < numVertsPerLine - 1 && (!isEdgeConnectionVertex || (col != 2 && row != 2));
+					bool createTriangle = y < numVertsPerLine - 1 && x < numVertsPerLine - 1 && (!isEdgeConnectionVertex || (y != 2 && x != 2));
 
 					if (createTriangle) {
-						int currentIncrement = (isMainVertex && col != numVertsPerLine - 3 && row != numVertsPerLine - 3) ? skipIncrement : 1;
+						int currentIncrement = (isMainVertex && y != numVertsPerLine - 3 && x != numVertsPerLine - 3) ? skipIncrement : 1;
 
-						int a = vertexIndicesMap [col, row];
-						int b = vertexIndicesMap [col + currentIncrement, row];
-						int c = vertexIndicesMap [col, row + currentIncrement];
-						int d = vertexIndicesMap [col + currentIncrement, row + currentIncrement];
+						int a = vertexIndicesMap [x, y];
+						int b = vertexIndicesMap [x + currentIncrement, y];
+						int c = vertexIndicesMap [x, y + currentIncrement];
+						int d = vertexIndicesMap [x + currentIncrement, y + currentIncrement];
 						//meshData.AddTriangle(a, d, c);
 						//meshData.AddTriangle(d, a, b);
 						meshData.AddTriangle(a, c, d);

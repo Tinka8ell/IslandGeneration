@@ -9,7 +9,7 @@ public static class Noise {
 	private static float[] amplitudes;
 	private static float[] frequencies;
 
-	private static float maxPossibleHeight;
+	public static float maxPossibleHeight;
 	private static bool initialised = false;
 
 	public static void InitialiseNoise(NoiseSettings settings)
@@ -59,72 +59,56 @@ public static class Noise {
 
 		float half = (size - 1) / 2f;
 
-		for (int y = 0; y < size; y++) {
-			for (int x = 0; x < size; x++) {
+		for (int x = 0; x < size; x++)
+		{
+			for (int y = 0; y < size; y++) {
 
 				float noiseHeight = 0;
 
 				for (int o = 0; o < settings.octaves; o++) {
 					float sampleX = (x-half + octaveOffsets[o].x + sampleCentre.x) / settings.scale * frequencies[o];
-					float sampleY = (y-half + octaveOffsets[o].y - sampleCentre.y) / settings.scale * frequencies[o];
+					float sampleY = (y-half + octaveOffsets[o].y + sampleCentre.y) / settings.scale * frequencies[o];
 
-					float perlinValue = Mathf.PerlinNoise (sampleX, sampleY) * 2 - 1; // convert 0<=?<=1 to -1<=?<=1
+					// float perlinValue = Mathf.PerlinNoise (sampleX, sampleY) * 2 - 1; // convert 0<=?<=1 to -1<=?<=1
+					float perlinValue = Mathf.PerlinNoise(sampleX, sampleY);
 					noiseHeight += perlinValue * amplitudes[o];
 				}
 
-				if (noiseHeight > maxLocalNoiseHeight) {
-					maxLocalNoiseHeight = noiseHeight;
-				} 
-				if (noiseHeight < minLocalNoiseHeight) {
-					minLocalNoiseHeight = noiseHeight;
+				if (settings.normalizeMode == NormalizeMode.Global)
+				{
+					//// this calculation makes no sense!
+					//// - maxPossibleHeight < noiseHeight < maxPossibleHeight
+					//// so moving it up 1 before lerping it between 0 and 1 does not make sense at all
+					//float normalizedHeight = (noiseHeight + 1) / (maxPossibleHeight / 0.9f);
+					//noiseHeight = Mathf.Clamp(normalizedHeight, 0, int.MaxValue);
+					float normalizedHeight = noiseHeight / maxPossibleHeight;
+					noiseHeight = Mathf.Clamp(normalizedHeight, 0, 1);
 				}
-
-				if (settings.normalizeMode == NormalizeMode.Global) {
-					// this calculation makes no sense!
-					// - maxPossibleHeight < noiseHeight < maxPossibleHeight
-					// so moving it up 1 before lerping it between 0 and 1 does not make sense at all
-					float normalizedHeight = (noiseHeight + 1) / (maxPossibleHeight / 0.9f);
-					noiseHeight = Mathf.Clamp (normalizedHeight, 0, int.MaxValue);
+				else // settings.normalizeMode == NormalizeMode.Local
+				{
+					if (noiseHeight > maxLocalNoiseHeight)
+					{
+						maxLocalNoiseHeight = noiseHeight;
+					}
+					if (noiseHeight < minLocalNoiseHeight)
+					{
+						minLocalNoiseHeight = noiseHeight;
+					}
 				}
-
-				noiseMap[y, x] = noiseHeight;
+				noiseMap[x, y] = noiseHeight;
 			}
-		}
-
-		if (debug)
-        {
-			int y = 0;
-			int x = 0;
-			Vector2 tl = new Vector2(
-				(x - half + octaveOffsets[0].x) / settings.scale, 
-				(y - half + octaveOffsets[0].y) / settings.scale);
-			y = size - 1;
-			x = size - 1;
-			Vector2 br = new Vector2(
-				(x - half + octaveOffsets[0].x) / settings.scale, 
-				(y - half + octaveOffsets[0].y) / settings.scale);
-			Debug.LogFormat("GenerateNoiseMap: edges for: {2}, {0}, {1}", tl, br, sampleCentre);
 		}
 
 		// this is not being used at present, but does not make sense if we are are tiling anyway
 		if (settings.normalizeMode == NormalizeMode.Local)
 		{
-			for (int y = 0; y < size; y++) {
-				for (int x = 0; x < size; x++) {
+			for (int x = 0; x < size; x++)
+			{
+				for (int y = 0; y < size; y++) {
 					noiseMap [x, y] = Mathf.InverseLerp (minLocalNoiseHeight, maxLocalNoiseHeight, noiseMap [x, y]);
 				}
 			}
 		}
-		/*
-		noiseMap = new float[size, size];
-		for (int y = 0; y < 10; y++)
-		{
-			for (int x = 0; x < 10; x++)
-			{
-				noiseMap[y, x] = .9f;
-			}
-		}
-		*/
 		return noiseMap;
 	}
 
