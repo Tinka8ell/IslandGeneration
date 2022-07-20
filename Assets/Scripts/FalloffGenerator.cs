@@ -24,9 +24,9 @@ public struct FalloffGenerator
 	private static int size;
 	private static FalloffSettings falloffSettings;
 
-	public static Dictionary<ulong, FalloffMap> falloffCorners = new();
-    private static int centreMapSize;
-	private static int cornerSize;
+	public static Dictionary<string, FalloffMap> falloffCorners = new();
+ //   private static int centreMapSize;
+	//private static int cornerSize;
 
 	public static float[,] noFalloff;
 
@@ -40,8 +40,8 @@ public struct FalloffGenerator
 		Islands.settings = falloffSettings.islandNoiseSettings;
 
 		falloffCorners.Clear(); // remove old ones
-		centreMapSize = size - 2; // set size of the centre maps 
-		cornerSize = (centreMapSize + 1) / 2; // assumes size is odd!
+		//centreMapSize = size - 2; // set size of the centre maps 
+		//cornerSize = (centreMapSize + 1) / 2; // assumes size is odd!
 
 		noFalloff = new float[size, size];
 		for (int j = 1; j < size; j++)
@@ -135,7 +135,7 @@ public struct FalloffGenerator
 
     public static float[,] GetCorners(Corner corner, int cornerSize)
     {
-		ulong index = corner.index;
+		string index = corner.index;
 		FalloffMap quadrant;
 		bool found = falloffCorners.TryGetValue(index, out quadrant);
 		//Debug.LogFormat("getCorner for corners: {0}/{1}/{2}/{3}, index: {4}, found: {5}",

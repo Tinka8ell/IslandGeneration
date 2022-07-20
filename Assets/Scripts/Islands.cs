@@ -20,6 +20,7 @@ public static class Islands
 	/// <returns>int level between 0 and IslandNoiseSettings.levels</returns>
 	public static int GetLevel(Vector2 coord, bool debug = false)
 	{
+		int maxLevel = 2 ^ settings.powerLevel;
 		int level = 0;
 		if (settings.useFixed)
         {
@@ -43,12 +44,12 @@ public static class Islands
 			float perlinValue = Mathf.PerlinNoise(sampleX, sampleY);
 			if (perlinValue > settings.threshold)
 			{
-				level = Mathf.CeilToInt(Mathf.Lerp(0, settings.highestLevel, (perlinValue - settings.threshold) / (1 - settings.threshold)));
+				level = Mathf.CeilToInt(Mathf.Lerp(0, maxLevel, (perlinValue - settings.threshold) / (1 - settings.threshold)));
 			}
 			if (debug) Debug.LogFormat("IsIsland for {0}, offset=({1}, {2}), sample=({3},{4}), perlin={5}, level={6}",
 				coord, offsetX, offsetY, sampleX, sampleY, perlinValue, level);
 		}
-		return level;
+		return (level == 0) ? 0 : level - 1 + maxLevel;
 	}
 
 	public static Vector2 NextDoor(Vector2 coord, Compass compass)
@@ -228,17 +229,17 @@ public class IslandNoiseSettings {
 	[Range(0, 1)]
 	public float threshold = .95f;
 
-	public static int levels = 3; // highest possible level
+	public static int levels = 2^2; // highest possible level
 	public static int maxLevel = (levels + 1) * 4; 
-	[Range(1, 3)]
-	public int highestLevel = 1;
+	[Range(1, 7)]
+	public int powerLevel = 1;
 
 	public bool useFixed = false;
 
 	public int[,] fixedIslands = new int[3, 3]{ // note it is not layed out the way it looks!
-		{0, 0, 0},
 		{0, 1, 0},
-		{0, 0, 0}
+		{1, 2, 1},
+		{0, 1, 0}
 	};
 
 	public void ValidateValues()

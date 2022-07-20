@@ -40,7 +40,7 @@ public class MapPreview : MonoBehaviour {
 		HeightMap heightMap = GetTestMap(meshSettings.numVertsPerLine);
 		Vector2 sampleCentre = coord * meshSettings.meshWorldSize / meshSettings.meshScale;
 
-		float falloffRange = falloffSettings.islandNoiseSettings.highestLevel * 16f;
+		float falloffRange = 2 ^ falloffSettings.islandNoiseSettings.powerLevel;
 
 		switch (drawMode)
 		{
@@ -107,7 +107,7 @@ public class MapPreview : MonoBehaviour {
 								meshSettings.numVertsPerLine, 
 								falloffSettings.islandNoiseSettings, 
 								coord
-								), 0, Islands.settings.highestLevel
+								), 0, Islands.settings.powerLevel
 							)
 						)
 					);
