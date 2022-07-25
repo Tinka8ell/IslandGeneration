@@ -40,7 +40,10 @@ public class MapPreview : MonoBehaviour {
 		HeightMap heightMap = GetTestMap(meshSettings.numVertsPerLine);
 		Vector2 sampleCentre = coord * meshSettings.meshWorldSize / meshSettings.meshScale;
 
-		float falloffRange = 2 ^ falloffSettings.islandNoiseSettings.powerLevel;
+		float falloffRange = 2 * ((1 << falloffSettings.islandNoiseSettings.powerLevel) - 1);
+
+		Debug.LogWarningFormat("DrawMapInEditor: centre: {0}, coord: {1}, power: {2}, range: {3}", 
+			sampleCentre, coord, falloffSettings.islandNoiseSettings.powerLevel, falloffRange);
 
 		switch (drawMode)
 		{
@@ -79,9 +82,10 @@ public class MapPreview : MonoBehaviour {
 				break;
 			case DrawMode.Quadrant:
 				Anews quadAnews = Islands.LocalNews(coord);
-				// Debug.LogFormat("Quadrant for {0} with anews: {1} and direction: {2}", coord, quadAnews, cornorDirection);
 				Corner corner = quadAnews.GetCorner(cornorDirection);
-				float[,] quadMap = FalloffGenerator.GetCorners(corner, meshSettings.numVertsPerLine);
+				Debug.LogFormat("Quadrant for {0} with anews: {1} and direction: {2} with corner: {3} and range: 0 - {4}"
+					, coord, quadAnews, cornorDirection, corner, falloffRange);
+				float[,] quadMap = FalloffGenerator.GetQuadrant(corner, meshSettings.numVertsPerLine);
 				//for(int j = 0; j < quadMap.GetLength(0); j += 10)
 				//{
 				//	string line = "";

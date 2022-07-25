@@ -34,6 +34,11 @@ public class Corner
         index = string.Format("{0:D3}|{1:D3}|{2:D3}|{3:D3}", 
             nw, ne, se, sw);
     }
+
+    public override string ToString()
+    {
+        return index;
+    }
 }
 
 public class Anews 

@@ -24,7 +24,7 @@ public struct FalloffGenerator
 	private static int size;
 	private static FalloffSettings falloffSettings;
 
-	public static Dictionary<string, FalloffMap> falloffCorners = new();
+	public static Dictionary<string, Quadrant> falloffCorners = new();
  //   private static int centreMapSize;
 	//private static int cornerSize;
 
@@ -98,57 +98,58 @@ public struct FalloffGenerator
 				CornorDirection cornorDirection = cornorDirections[edgeNumber];
 				Corner corner = anews.GetCorner(cornorDirection);
 
-				//Debug.LogFormat("BuildFalloffMap, loop[{0}, {1}], cell: {2}, direction: {3}, offset: ({4}, {5}), phase: ({6}, {7}), anews: {8}, corners: {9}/{10}/{11}/{12}",
-				//    cellCol, cellRow, cell, cornorDirection, 
-				//	offsetX, offsetY, phaseX, phaseY, 
-				//	anews, corners[0], corners[1], corners[2], corners[3]);
+                Debug.LogFormat("BuildFalloffMap, loop[{0}, {1}], cell: {2}, direction: {3}, offset: ({4}, {5}), phase: ({6}, {7}), anews: {8}, corner: {9}",
+                    cellCol, cellRow, cell, cornorDirection,
+                    offsetX, offsetY, phaseX, phaseY,
+                    anews, corner.index);
 
-				int col = offsetX * centreSize;
+                int col = offsetX * centreSize;
 				col += (phaseX == 0) ? 1 : cornerSize;
 				int row = offsetY * centreSize;
 				row += (phaseY == 0) ? 1 : cornerSize;
-				CopyCorner(falloffMap, corner, col, row, cornerSize);
+				CopyQuadrant(falloffMap, corner, col, row, cornerSize);
 			}
         }
 
 		return falloffMap;
 	}
 
-    private static void CopyCorner(float[,] falloffMap, Corner corner, int x, int y, int cornerSize)
+    private static void CopyQuadrant(float[,] falloffMap, Corner corner, int x, int y, int cornerSize)
     {
-        float[,] corners = GetCorners(corner, cornerSize);
+        float[,] quadrant = GetQuadrant(corner, cornerSize);
 		int minx = Mathf.Max(0, -x);
 		int maxx = Mathf.Min(cornerSize, size - x);
 		int miny = Mathf.Max(0, -y);
 		int maxy = Mathf.Min(cornerSize, size - y);
-		//Debug.LogFormat("CopyCorner for corners: {0}/{1}/{2}/{3}, ({4}, {5}), minx: {6}, maxx: {7}, miny: {8}, maxy {9}",
-		//	corners[0], corners[1], corners[2], corners[3], x, y, minx, maxx, miny, maxy);
+		//Debug.LogFormat("CopyQuadrant for corner: {0}, ({1}, {2}), minx: {3}, maxx: {4}, miny: {5}, maxy {6}",
+		//	corner.index, x, y, minx, maxx, miny, maxy);
 		for (int i = minx; i < maxx; i++)
         {
 			for (int j = miny; j < maxy; j++)
 			{
-				float value = corners[i, j];
+				float value = quadrant[i, j];
 				falloffMap[x + i, y + j] = value;
 			}
 		}
 	}
 
-    public static float[,] GetCorners(Corner corner, int cornerSize)
+    public static float[,] GetQuadrant(Corner corner, int cornerSize)
     {
 		string index = corner.index;
-		FalloffMap quadrant;
+		Quadrant quadrant;
 		bool found = falloffCorners.TryGetValue(index, out quadrant);
-		//Debug.LogFormat("getCorner for corners: {0}/{1}/{2}/{3}, index: {4}, found: {5}",
-		//	corners[0], corners[1], corners[2], corners[3], index, found);
+		//Debug.LogFormat("GetQuadrant for corner: {0}, found: {1}",
+		//	corner.index, found);
 		if (!found){
-			quadrant = GenerateCorner(corner, cornerSize);
+			quadrant = GenerateQuadrant(corner, cornerSize);
 			falloffCorners.Add(index, quadrant);
         }
 		return quadrant.values;
 	}
 
-    private static FalloffMap GenerateCorner(Corner corner, int cornerSize)
+    private static Quadrant GenerateQuadrant(Corner corner, int cornerSize)
 	{
+		Debug.LogFormat("GenerateCorner({0}, {1})", corner.index, cornerSize);
 		float[,] values = new float[cornerSize, cornerSize];
 		QuadSlope(values, cornerSize, corner.corners);
 		return new(values);
@@ -161,10 +162,8 @@ public struct FalloffGenerator
 		float b = abcd[1];
 		float c = abcd[2];
 		float d = abcd[3];
-		//Debug.LogFormat("QuadSlope: size: {0}, abcd: {1}, {2}, {3}, {4})",
-		//	size, a, b, c, d);
 
-		for (int row = 0; row < size; row++) // rows
+        for (int row = 0; row < size; row++) // rows
 		{
 			for (int col = 0; col < size; col++) // columns
 			{
@@ -174,6 +173,19 @@ public struct FalloffGenerator
 				values[col, row] = value;
 			}
 		}
+
+		int step = size / 3;
+		string rep = "";
+		for (int row = size - 1; row >= 0; row -= step) // rows
+		{
+			rep += "/ ";
+			for (int col = 0; col < size; col += step) // columns
+			{
+				rep += values[col, row].ToString("N2") + ", ";
+			}
+		}
+		Debug.LogFormat("QuadSlope: size: {0}, abcd: {1}, {2}, {3}, {4}: {5})",
+			size, a, b, c, d, rep);
 	}
 
 	static float Evaluate(float value, float a, float b)
@@ -212,11 +224,11 @@ public struct FalloffGenerator
 	}
 }
 
-public struct FalloffMap 
+public struct Quadrant 
 {
 	public readonly float[,] values;
 
-	public FalloffMap(float[,] values)
+	public Quadrant(float[,] values)
 	{
 		this.values = values;
 	}

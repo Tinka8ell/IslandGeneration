@@ -20,7 +20,7 @@ public static class Islands
 	/// <returns>int level between 0 and IslandNoiseSettings.levels</returns>
 	public static int GetLevel(Vector2 coord, bool debug = false)
 	{
-		int maxLevel = 2 ^ settings.powerLevel;
+		int maxLevel = (1 << settings.powerLevel) - 1;
 		int level = 0;
 		if (settings.useFixed)
         {
@@ -141,7 +141,7 @@ public static class Islands
 				//	// Debug.LogFormat("Found island at: {0}", test);
 				//	float r = Vector2.Distance(test, centre);
 				//	if (r < minR)
-    //                {
+				//  {
 				//		minR = r;
 				//		nearest = test;
 				//	}
@@ -229,10 +229,10 @@ public class IslandNoiseSettings {
 	[Range(0, 1)]
 	public float threshold = .95f;
 
-	public static int levels = 2^2; // highest possible level
+	public static int levels = (1 << 2) - 1; // highest possible level
 	public static int maxLevel = (levels + 1) * 4; 
 	[Range(1, 7)]
-	public int powerLevel = 1;
+	public int powerLevel = 2;
 
 	public bool useFixed = false;
 
