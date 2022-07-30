@@ -40,7 +40,7 @@ public class MapPreview : MonoBehaviour {
 		HeightMap heightMap = GetTestMap(meshSettings.numVertsPerLine);
 		Vector2 sampleCentre = coord * meshSettings.meshWorldSize / meshSettings.meshScale;
 
-		float falloffRange = 2 * ((1 << falloffSettings.islandNoiseSettings.powerLevel) - 1);
+		float falloffRange = 4 * ((1 << falloffSettings.islandNoiseSettings.powerLevel) - 1);
 
 		Debug.LogWarningFormat("DrawMapInEditor: centre: {0}, coord: {1}, power: {2}, range: {3}", 
 			sampleCentre, coord, falloffSettings.islandNoiseSettings.powerLevel, falloffRange);
